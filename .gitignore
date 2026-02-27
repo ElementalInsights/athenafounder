@@ -1,0 +1,8 @@
+node_modules/
+.DS_Store
+Thumbs.db
+
+# Session data — contains internal file paths, keep local only
+claude-viz-data.json
+claude-viz-slim.json
+claude-context-data.json

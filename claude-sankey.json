@@ -1,0 +1,296 @@
+{
+  "nodes": [
+    {
+      "id": "Week 1\nFeb 3–7",
+      "group": 0,
+      "label": "Week 1\nFeb 3–7"
+    },
+    {
+      "id": "Week 2\nFeb 8–12",
+      "group": 0,
+      "label": "Week 2\nFeb 8–12"
+    },
+    {
+      "id": "Week 3\nFeb 13–17",
+      "group": 0,
+      "label": "Week 3\nFeb 13–17"
+    },
+    {
+      "id": "Week 4\nFeb 18–22",
+      "group": 0,
+      "label": "Week 4\nFeb 18–22"
+    },
+    {
+      "id": "Week 5\nFeb 23–27",
+      "group": 0,
+      "label": "Week 5\nFeb 23–27"
+    },
+    {
+      "id": "Explore",
+      "group": 1,
+      "label": "Explore"
+    },
+    {
+      "id": "Build",
+      "group": 1,
+      "label": "Build"
+    },
+    {
+      "id": "Execute",
+      "group": 1,
+      "label": "Execute"
+    },
+    {
+      "id": "Plan",
+      "group": 1,
+      "label": "Plan"
+    },
+    {
+      "id": "Schema",
+      "group": 1,
+      "label": "Schema"
+    },
+    {
+      "id": "Research",
+      "group": 1,
+      "label": "Research"
+    },
+    {
+      "id": "App Pages",
+      "group": 2,
+      "label": "App Pages"
+    },
+    {
+      "id": "Packages",
+      "group": 2,
+      "label": "Packages"
+    },
+    {
+      "id": "Specs",
+      "group": 2,
+      "label": "Specs"
+    },
+    {
+      "id": "DB / Schema",
+      "group": 2,
+      "label": "DB / Schema"
+    },
+    {
+      "id": "i18n / Assets",
+      "group": 2,
+      "label": "i18n / Assets"
+    },
+    {
+      "id": "Core Packages",
+      "group": 2,
+      "label": "Core Packages"
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "target": 7,
+      "value": 2595
+    },
+    {
+      "source": 0,
+      "target": 6,
+      "value": 3754
+    },
+    {
+      "source": 0,
+      "target": 5,
+      "value": 2938
+    },
+    {
+      "source": 0,
+      "target": 8,
+      "value": 394
+    },
+    {
+      "source": 0,
+      "target": 9,
+      "value": 48
+    },
+    {
+      "source": 0,
+      "target": 10,
+      "value": 10
+    },
+    {
+      "source": 1,
+      "target": 5,
+      "value": 1859
+    },
+    {
+      "source": 1,
+      "target": 10,
+      "value": 11
+    },
+    {
+      "source": 1,
+      "target": 6,
+      "value": 2400
+    },
+    {
+      "source": 1,
+      "target": 7,
+      "value": 971
+    },
+    {
+      "source": 1,
+      "target": 8,
+      "value": 142
+    },
+    {
+      "source": 1,
+      "target": 9,
+      "value": 55
+    },
+    {
+      "source": 2,
+      "target": 5,
+      "value": 486
+    },
+    {
+      "source": 2,
+      "target": 7,
+      "value": 168
+    },
+    {
+      "source": 2,
+      "target": 6,
+      "value": 518
+    },
+    {
+      "source": 2,
+      "target": 9,
+      "value": 7
+    },
+    {
+      "source": 2,
+      "target": 8,
+      "value": 3
+    },
+    {
+      "source": 3,
+      "target": 7,
+      "value": 2280
+    },
+    {
+      "source": 3,
+      "target": 5,
+      "value": 4081
+    },
+    {
+      "source": 3,
+      "target": 6,
+      "value": 3106
+    },
+    {
+      "source": 3,
+      "target": 8,
+      "value": 603
+    },
+    {
+      "source": 3,
+      "target": 9,
+      "value": 111
+    },
+    {
+      "source": 3,
+      "target": 10,
+      "value": 38
+    },
+    {
+      "source": 4,
+      "target": 8,
+      "value": 614
+    },
+    {
+      "source": 4,
+      "target": 5,
+      "value": 3658
+    },
+    {
+      "source": 4,
+      "target": 10,
+      "value": 19
+    },
+    {
+      "source": 4,
+      "target": 7,
+      "value": 1254
+    },
+    {
+      "source": 4,
+      "target": 6,
+      "value": 2841
+    },
+    {
+      "source": 4,
+      "target": 9,
+      "value": 58
+    },
+    {
+      "source": 6,
+      "target": 13,
+      "value": 598
+    },
+    {
+      "source": 6,
+      "target": 14,
+      "value": 995
+    },
+    {
+      "source": 6,
+      "target": 12,
+      "value": 2886
+    },
+    {
+      "source": 6,
+      "target": 11,
+      "value": 7059
+    },
+    {
+      "source": 5,
+      "target": 12,
+      "value": 2700
+    },
+    {
+      "source": 5,
+      "target": 14,
+      "value": 1022
+    },
+    {
+      "source": 5,
+      "target": 13,
+      "value": 470
+    },
+    {
+      "source": 5,
+      "target": 16,
+      "value": 82
+    },
+    {
+      "source": 5,
+      "target": 11,
+      "value": 3760
+    },
+    {
+      "source": 6,
+      "target": 15,
+      "value": 183
+    },
+    {
+      "source": 5,
+      "target": 15,
+      "value": 122
+    },
+    {
+      "source": 6,
+      "target": 16,
+      "value": 15
+    }
+  ]
+}

@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Building AthenaForms with Claude</title>
+<meta name="description" content="How I built an enterprise SaaS with Claude Code. The data, the methodology, and what actually happened.">
+<meta property="og:title" content="I Built an Enterprise SaaS With Claude">
+<meta property="og:description" content="45 sessions. 393 context resets. 588,119 lines of code. One War &amp; Peace. Here's what that actually looked like.">
+<meta property="og:type" content="article">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="I Built an Enterprise SaaS With Claude">
+<meta name="twitter:description" content="45 sessions. 393 context resets. 588,119 lines of code. The data, the methodology, and what actually happened.">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#07080f;--surface:#0e1018;--border:#1e2235;
+  --text:#e2e8f0;--muted:#64748b;--dim:#334155;
+  --green:#10b981;--teal:#06b6d4;--amber:#f59e0b;--red:#ef4444;--purple:#8b5cf6;
+}
+html{scroll-behavior:smooth;zoom:1.25}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:18px;line-height:1.7;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(16,185,129,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(16,185,129,.025) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;z-index:0}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:16px 48px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(30,34,53,0);transition:border-color .3s,background .3s;backdrop-filter:blur(0px)}
+nav.scrolled{border-color:var(--border);background:rgba(7,8,15,.85);backdrop-filter:blur(12px)}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.nav-logo img{height:28px;width:auto;filter:brightness(0) saturate(100%) invert(55%) sepia(60%) saturate(400%) hue-rotate(120deg) brightness(90%)}
+.nav-logo-name{font-size:15px;font-weight:700;color:var(--green);letter-spacing:-.01em}
+.nav-cta{font-size:12px;padding:8px 20px;background:var(--green);color:#000;border-radius:6px;font-weight:600;text-decoration:none;letter-spacing:.01em;transition:opacity .2s}
+.nav-cta:hover{opacity:.85}
+
+/* SECTIONS */
+section{position:relative;z-index:1}
+.container{max-width:1000px;margin:0 auto;padding:0 48px}
+.container-wide{max-width:1400px;margin:0 auto;padding:0 64px}
+
+/* HERO */
+.hero{padding:140px 0 100px;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-300px;left:50%;transform:translateX(-50%);width:800px;height:800px;background:radial-gradient(circle,rgba(16,185,129,.08) 0%,transparent 65%);pointer-events:none}
+.hero-eyebrow{font-size:13px;letter-spacing:.25em;text-transform:uppercase;color:var(--green);margin-bottom:20px;font-family:'SF Mono','Cascadia Code',monospace}
+.hero-title{font-size:clamp(48px,7vw,96px);font-weight:800;letter-spacing:-.03em;line-height:1.05;margin-bottom:20px}
+.hero-title span{color:var(--green)}
+.hero-sub{font-size:22px;color:var(--muted);max-width:680px;margin:0 auto 60px;line-height:1.6}
+.stats-row{display:flex;justify-content:center;gap:0;flex-wrap:nowrap;border:1px solid var(--border);border-radius:12px;overflow:hidden;max-width:900px;margin:0 auto;background:var(--surface)}
+.stat{flex:1;padding:28px 24px;border-right:1px solid var(--border);text-align:center;min-width:0}
+.stat:last-child{border-right:none}
+.stat-val{font-size:clamp(16px,1.8vw,28px);font-weight:700;font-family:'SF Mono','Cascadia Code',monospace;letter-spacing:-.02em;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat-val.g{color:var(--green)}
+.stat-val.t{color:var(--teal)}
+.stat-val.a{color:var(--amber)}
+.stat-lbl{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-top:4px}
+
+/* PROSE */
+.prose{padding:80px 0}
+.prose h2{font-size:36px;font-weight:700;letter-spacing:-.02em;margin-bottom:16px;margin-top:72px;color:var(--text)}
+.prose h2:first-child{margin-top:0}
+.prose p{color:#94a3b8;margin-bottom:24px;font-size:20px}
+.prose p strong{color:var(--text)}
+.prose ul,.prose ol{color:#94a3b8;padding-left:24px;margin-bottom:24px}
+.prose li{margin-bottom:10px;font-size:20px}
+.prose li strong{color:var(--text)}
+.prose hr{border:none;border-top:1px solid var(--border);margin:48px 0}
+.prose code{font-family:'SF Mono','Cascadia Code',monospace;font-size:13px;background:#0e1018;border:1px solid var(--border);padding:2px 6px;border-radius:4px;color:var(--green)}
+
+/* LAYER CARDS */
+.layer-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;margin:32px 0}
+.layer-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px;position:relative;overflow:hidden}
+.layer-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--c,var(--green))}
+.layer-tag{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--c,var(--green));font-family:'SF Mono','Cascadia Code',monospace;margin-bottom:10px}
+.layer-title{font-size:20px;font-weight:700;margin-bottom:8px}
+.layer-desc{font-size:17px;color:var(--muted);line-height:1.6}
+
+/* DATA SECTION */
+.data-section{background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:80px 0}
+.section-eyebrow{font-size:12px;letter-spacing:.25em;text-transform:uppercase;color:var(--green);font-family:'SF Mono','Cascadia Code',monospace;margin-bottom:8px}
+.section-title{font-size:40px;font-weight:700;letter-spacing:-.02em;margin-bottom:8px}
+.section-desc{color:var(--muted);font-size:18px;margin-bottom:40px}
+
+/* SANKEY */
+#sk-wrap{overflow:hidden}
+#sk{width:100%;display:block;overflow:visible}
+
+/* LEGEND */
+.sk-legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:24px;padding-top:20px;border-top:1px solid var(--border);align-items:center}
+.sk-sep{color:var(--border);font-size:16px;margin:0 2px;user-select:none}
+.sk-dot-wrap{position:relative;display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--dim);cursor:default;font-family:'SF Mono','Cascadia Code',monospace;transition:color .15s}
+.sk-dot-wrap:hover{color:var(--text)}
+.sk-dot{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+.sk-dot-wrap::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);white-space:nowrap;background:#1a1d2e;border:1px solid #2d3456;color:#94a3b8;font-size:12px;font-family:inherit;padding:5px 12px;border-radius:6px;opacity:0;pointer-events:none;transition:opacity .15s;z-index:200}
+.sk-dot-wrap:hover::after{opacity:1}
+
+/* DAY CARDS */
+.day-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:40px}
+@media(max-width:768px){.day-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:480px){.day-grid{grid-template-columns:1fr}}
+.day-card{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:22px;position:relative;overflow:hidden}
+.day-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--c,var(--green))}
+.day-emoji{font-size:22px;margin-bottom:12px}
+.day-headline{font-size:17px;font-weight:500;color:var(--text);line-height:1.5;margin-bottom:14px}
+.day-headline strong{color:var(--text);font-weight:700}
+.day-stat{font-size:12px;font-family:'SF Mono','Cascadia Code',monospace;color:var(--dim);letter-spacing:.04em}
+
+/* CTA */
+.cta-section{padding:100px 0;text-align:center}
+.cta-title{font-size:clamp(32px,5vw,60px);font-weight:700;letter-spacing:-.02em;margin-bottom:16px}
+.cta-sub{color:var(--muted);font-size:19px;max-width:680px;margin:0 auto 32px;line-height:1.65}
+.cta-chips{display:flex;flex-wrap:wrap;gap:9px;justify-content:center;max-width:720px;margin:0 auto 40px}
+.cta-chip{padding:5px 14px;border:1px solid rgba(16,185,129,0.25);border-radius:20px;background:rgba(16,185,129,0.06);font-size:13px;color:var(--muted);font-family:'SF Mono','Cascadia Code',monospace;letter-spacing:.01em;white-space:nowrap}
+.cta-btn{display:inline-block;padding:16px 40px;background:var(--green);color:#000;font-weight:700;font-size:16px;border-radius:8px;text-decoration:none;letter-spacing:.01em;transition:opacity .2s,transform .2s}
+.cta-btn:hover{opacity:.9;transform:translateY(-1px)}
+
+/* CONTEXT PULSE */
+.context-section{border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--bg);padding-bottom:80px}
+.context-hero{padding:80px 0 48px;text-align:center}
+.concept-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin:0 0 0}
+.concept-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px;position:relative;overflow:hidden}
+.concept-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--c,var(--green))}
+.concept-num{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--c,var(--green));font-family:'SF Mono','Cascadia Code',monospace;margin-bottom:10px}
+.concept-title{font-size:18px;font-weight:700;margin-bottom:8px}
+.concept-desc{font-size:15px;color:var(--muted);line-height:1.6}
+.pulse-player{border:1px solid var(--border);border-radius:16px;overflow:hidden;background:var(--surface);margin-top:56px}
+.pulse-player-top{display:flex;justify-content:space-between;align-items:center;padding:20px 32px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:12px}
+.pulse-player-info{font-size:15px;color:var(--muted);font-family:'SF Mono','Cascadia Code',monospace}
+.pulse-player-btns{display:flex;gap:8px}
+.pl-btn{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 20px;border-radius:6px;font-family:'SF Mono','Cascadia Code',monospace;font-size:13px;cursor:pointer;transition:border-color .2s}
+.pl-btn:hover{border-color:var(--green);color:var(--green)}
+.pulse-fill-row{display:flex;align-items:center;gap:16px;padding:14px 32px;border-bottom:1px solid var(--border);background:var(--bg)}
+.pulse-fill-label{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#94a3b8;font-family:'SF Mono','Cascadia Code',monospace;white-space:nowrap;min-width:150px}
+.pulse-fill-track{flex:1;height:10px;background:#1e2235;border-radius:5px;overflow:hidden}
+.pulse-fill-bar{height:100%;width:0%;border-radius:5px;transition:width .08s linear,background .15s ease}
+.pulse-fill-pct{font-size:13px;font-weight:600;color:#e2e8f0;font-family:'SF Mono','Cascadia Code',monospace;min-width:44px;text-align:right}
+#pulse-wrap{background:var(--bg)}
+.pulse-legend{display:flex;gap:20px;padding:10px 32px;border-top:1px solid var(--border);flex-wrap:wrap;align-items:center}
+.pleg{display:flex;align-items:center;gap:6px;font-size:12px;color:#94a3b8;font-family:'SF Mono','Cascadia Code',monospace;white-space:nowrap}
+.pleg i{display:inline-block;width:12px;height:12px;border-radius:2px;flex-shrink:0}
+.pulse-hint{font-size:13px;color:#475569;font-family:'SF Mono','Cascadia Code',monospace;padding:12px 32px;border-top:1px solid var(--border)}
+
+/* FOUNDERS */
+.founders-section{border-bottom:1px solid var(--border);padding:56px 0;background:var(--surface)}
+.founders-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:1000px;margin:0 auto;padding:0 48px}
+.founder-card{border:1px solid var(--border);border-radius:12px;padding:28px 32px;background:var(--bg);border-left-width:3px;transition:border-color .2s}
+.founder-card:first-child{border-left-color:var(--green)}
+.founder-card:last-child{border-left-color:var(--teal)}
+.founder-card:hover{border-color:var(--muted);background:#111827}
+.founder-name{font-size:20px;font-weight:700;color:var(--text);margin-bottom:4px}
+.founder-role{font-size:11px;color:var(--muted);font-family:'SF Mono','Cascadia Code',monospace;letter-spacing:.12em;text-transform:uppercase;margin-bottom:16px}
+.founder-bio{font-size:15px;color:#94a3b8;line-height:1.75}
+@media(max-width:640px){.founders-grid{grid-template-columns:1fr;padding:0 20px}}
+
+/* FOOTER */
+footer{border-top:1px solid var(--border);padding:24px 48px;color:var(--muted);font-size:12px;display:flex;justify-content:space-between;font-family:'SF Mono','Cascadia Code',monospace}
+
+/* TOOLTIP */
+#tip{position:fixed;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 16px;font-size:12px;pointer-events:none;opacity:0;transition:opacity .15s;z-index:1000;box-shadow:0 8px 32px rgba(0,0,0,.6);font-family:'SF Mono','Cascadia Code',monospace}
+.tn{color:var(--green);font-weight:600;margin-bottom:6px}
+.tr{display:flex;justify-content:space-between;gap:16px;color:var(--muted)}
+.tr span:last-child{color:var(--text)}
+
+/* ANIMATE IN */
+.reveal{opacity:0;transform:translateY(24px)}
+
+@media(max-width:640px){
+  nav{padding:16px 20px}
+  .container,.container-wide{padding:0 20px}
+  .stats-row{flex-wrap:wrap}
+  .stat{flex:none;width:calc(50% - 1px)}
+  .hero{padding:100px 0 60px}
+  footer{flex-direction:column;gap:8px}
+}
+</style>
+</head>
+<body>
+
+<nav id="nav">
+  <a class="nav-logo" href="https://elementalinsights.com">
+    <img src="./athena-logo.png" alt="AthenaForms">
+    <span class="nav-logo-name">AthenaForms&#x2122;</span>
+  </a>
+  <a class="nav-cta" href="https://elementalinsights.com">Get Early Access</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container">
+    <img src="./athena-logo.png" alt="AthenaForms" style="height:72px;width:auto;display:block;margin:0 auto 28px;filter:brightness(0) saturate(100%) invert(55%) sepia(60%) saturate(400%) hue-rotate(120deg) brightness(90%)">
+    <div class="hero-eyebrow">Building in Public</div>
+    <h1 class="hero-title">I Built an Enterprise SaaS<br>With <span>Claude</span></h1>
+    <p class="hero-sub">Not vibes. No hand-waving. Here's what building an enterprise SaaS with Claude actually looked like — down to the byte.</p>
+    <div class="stats-row">
+      <div class="stat"><div class="stat-val g" id="s1">0</div><div class="stat-lbl">Sessions</div></div>
+      <div class="stat"><div class="stat-val" id="s2">0</div><div class="stat-lbl">Messages</div></div>
+      <div class="stat"><div class="stat-val t" id="s3">0</div><div class="stat-lbl">Context Resets</div></div>
+      <div class="stat"><div class="stat-val a" id="s4">0</div><div class="stat-lbl">GB Generated</div></div>
+      <div class="stat" style="flex:1.4"><div class="stat-val" style="color:var(--purple)" id="s5">0</div><div class="stat-lbl">Lines Written</div></div>
+    </div>
+    <div id="wp-pill" style="text-align:center;margin-top:16px"><span style="display:inline-block;padding:5px 18px;border:1px solid rgba(139,92,246,0.35);border-radius:20px;background:rgba(139,92,246,0.08);font-size:13px;color:#a78bfa;font-family:'SF Mono','Cascadia Code',monospace;letter-spacing:.01em">One <em>War &amp; Peace</em>. Written in code.</span></div>
+  </div>
+</section>
+
+<!-- STORY -->
+<section class="prose">
+  <div class="container">
+
+    <h2>What got built</h2>
+    <p>Let me just list it. Deep breath.</p>
+    <p>Classification-based access control. An org tree with materialized paths. Forms with full version history. Document management with mail merge. A workflow engine with state machines and SLA tracking. A CMMS. Reference libraries. Work packets with document acknowledgements. A report builder. Full-text search and RAG indexing across stored files. An AI assistant. An autonomous agent system. Enterprise SSO. Audit logging on every mutation. Four languages. Multi-tenant with row-level security on every table.</p>
+    <p><strong>I'm tired just reading that.</strong> One developer. One AI. That's the point.</p>
+
+    <hr>
+
+    <h2>The system that made it possible</h2>
+    <p>Most "I built with AI" posts skip the part that actually matters. So let's start there.</p>
+    <p><strong>Claude will confidently build the wrong thing if you let it.</strong> Not because it can't code. Because it optimizes for completing the task as described rather than building the right system. Early on I lost half a day to a perfectly implemented feature that violated a core architectural principle. The code was clean. The approach was wrong. Claude had drifted over a long session and I didn't catch it until it was already built.</p>
+    <p>The fix wasn't being more careful. It was structural. Four layers of context that gave every session a complete map before writing a line of code.</p>
+
+  </div>
+</section>
+
+<!-- LAYER CARDS -->
+<div class="container" style="padding-bottom:80px">
+  <div class="layer-grid">
+    <div class="layer-card reveal" style="--c:#10b981">
+      <div class="layer-tag">Layer 01</div>
+      <div class="layer-title">CLAUDE.md</div>
+      <div class="layer-desc">300+ line living document. Full architecture, database conventions, package patterns, what not to do and why. Every session reads it first. Every significant decision gets written back. Not a prompt. Institutional memory.</div>
+    </div>
+    <div class="layer-card reveal" style="--c:#06b6d4">
+      <div class="layer-tag">Layer 02</div>
+      <div class="layer-title">Specs Folder</div>
+      <div class="layer-desc">Every feature gets a spec before any code gets written. Data model, API surface, UI behavior, edge cases, open questions. When a spec was hard to write it meant the feature wasn't well understood yet. Better to find that out first.</div>
+    </div>
+    <div class="layer-card reveal" style="--c:#8b5cf6">
+      <div class="layer-tag">Layer 03</div>
+      <div class="layer-title">AGENTS.md Files</div>
+      <div class="layer-desc">26 feature packages. Each with its own AGENTS.md: what the package does, how to use its API, what patterns to follow. Claude reads the local map before touching anything. No rediscovering territory from scratch.</div>
+    </div>
+    <div class="layer-card reveal" style="--c:#f59e0b">
+      <div class="layer-tag">Layer 04</div>
+      <div class="layer-title">Tasks Folder</div>
+      <div class="layer-desc">Complex work gets a structured task list before the session starts. What needs to happen, in what order, what done looks like. Claude updates status as it works through them. The difference between shipping and spiraling.</div>
+    </div>
+  </div>
+</div>
+
+<section class="prose" style="padding-top:0">
+  <div class="container">
+
+    <h2>The 393 number</h2>
+    <p>Most Claude Code users never hit a context limit. It means a session ran so long and deep that the model's working memory filled up completely and had to summarize everything before continuing.</p>
+    <p>I hit it <strong>393 times.</strong></p>
+    <p>One session, a single day grinding through a security audit, generated <strong>123 megabytes</strong> of conversation data and hit the limit 63 times. Each time Claude would write out what had been built, what decisions were made and why, what was left. Then keep going. The specs made those summaries coherent because Claude always had something concrete to anchor to.</p>
+    <p>The longest single turn took <strong>48.5 minutes.</strong> I sent a message, made coffee, went for a walk, came back, and it was still running.</p>
+
+    <hr>
+
+    <h2>What the data shows</h2>
+    <p>Claude Code saves every session locally as JSONL files — a complete record of every message, tool call, and context reset. I didn't plan to analyze them. But after the build I realized I was sitting on 45 files and 0.82 GB of data about how I actually work. So I parsed all of it.</p>
+    <p>The meta-analysis was as useful as the build itself. It showed which features required the most back-and-forth, where the context system helped and where it slipped, and how the rhythm of sessions changed as the codebase matured. The methodology got better because the data showed where it was breaking down.</p>
+    <p>Tool calls across all 45 sessions tell their own story. More reads than writes. More searches than edits. The majority of operations were reading and understanding existing code before touching it.</p>
+    <ul>
+      <li><strong>Edit: 10,928</strong></li>
+      <li><strong>Read: 9,100</strong></li>
+      <li><strong>Bash: 7,268</strong></li>
+      <li><strong>Grep: 2,477</strong></li>
+      <li><strong>Write: 1,691</strong></li>
+    </ul>
+    <p>One file got edited 262 times across the project: <code>document-editor-page.tsx</code> — the living document editor with mail merge, version history, and policy acknowledgements. Not a sign of failure. A sign of something genuinely complex being iterated carefully, each session knowing exactly what the last one left behind. It is, for what it's worth, excellent now.</p>
+    <p>Where all that effort actually landed is easier to show than describe.</p>
+
+  </div>
+</section>
+
+<!-- DATA / VIZ -->
+<section class="data-section">
+  <div class="container-wide">
+    <div class="section-eyebrow">The Flow of Work</div>
+    <div class="section-title">How effort moved through the build</div>
+    <div class="section-desc">Weeks &rarr; Tool type &rarr; Codebase area &nbsp;&middot;&nbsp; Width = volume &nbsp;&middot;&nbsp; Hover for totals</div>
+    <div id="sk-wrap"><svg id="sk"></svg></div>
+
+    <div class="sk-legend">
+      <span class="sk-dot-wrap" data-tip="Read, search, understand before touching."><span class="sk-dot" style="background:#06b6d4"></span>Explore</span>
+      <span class="sk-dot-wrap" data-tip="Edit, write. Actually making things."><span class="sk-dot" style="background:#10b981"></span>Build</span>
+      <span class="sk-dot-wrap" data-tip="Bash. Run it and hope."><span class="sk-dot" style="background:#f59e0b"></span>Execute</span>
+      <span class="sk-dot-wrap" data-tip="Task tools. Not winging it."><span class="sk-dot" style="background:#8b5cf6"></span>Plan</span>
+      <span class="sk-dot-wrap" data-tip="Live database surgery."><span class="sk-dot" style="background:#ec4899"></span>Schema</span>
+      <span class="sk-dot-wrap" data-tip="When even Claude needs to look it up."><span class="sk-dot" style="background:#64748b"></span>Research</span>
+      <span class="sk-sep">·</span>
+      <span class="sk-dot-wrap" data-tip="UI routes and page components."><span class="sk-dot" style="background:#ef4444"></span>App Pages</span>
+      <span class="sk-dot-wrap" data-tip="@kit/* feature packages. The real work."><span class="sk-dot" style="background:#f97316"></span>Packages</span>
+      <span class="sk-dot-wrap" data-tip="Written before every feature. Source of truth."><span class="sk-dot" style="background:#eab308"></span>Specs</span>
+      <span class="sk-dot-wrap" data-tip="Migrations and schema files."><span class="sk-dot" style="background:#22c55e"></span>DB / Schema</span>
+      <span class="sk-dot-wrap" data-tip="Four languages. Many files."><span class="sk-dot" style="background:#3b82f6"></span>i18n / Assets</span>
+      <span class="sk-dot-wrap" data-tip="UI, infra, shared across everything."><span class="sk-dot" style="background:#a855f7"></span>Core Packages</span>
+    </div>
+
+    <div id="day-header" style="margin-top:80px">
+      <div class="section-eyebrow">Your Average Day</div>
+      <div class="section-title" style="font-size:24px">What building this actually looked like</div>
+      <div class="day-grid">
+        <div class="day-card reveal" style="--c:#10b981"><div class="day-emoji">☕</div><div class="day-headline">Six and a half hours of Claude <strong>actively thinking</strong> every day. Not wall clock.</div><div class="day-stat">6.7 hrs compute/day</div></div>
+        <div class="day-card reveal" style="--c:#06b6d4"><div class="day-emoji">💬</div><div class="day-headline">More messages than <strong>the full script of Inception</strong>. Written every single day.</div><div class="day-stat">2,193 messages/day</div></div>
+        <div class="day-card reveal" style="--c:#f59e0b"><div class="day-emoji">🧠</div><div class="day-headline"><strong>Total amnesia 22 times a day.</strong> Picked right back up every time.</div><div class="day-stat">21.7× context resets/day</div></div>
+        <div class="day-card reveal" style="--c:#8b5cf6"><div class="day-emoji">📚</div><div class="day-headline">Roughly <strong>23 novels</strong> of conversation data, generated every single day.</div><div class="day-stat">46 MB context/day</div></div>
+        <div class="day-card reveal" style="--c:#ec4899"><div class="day-emoji">⏱️</div><div class="day-headline">Started timing it. Made coffee. Ate lunch. Came back. <strong>Still running.</strong></div><div class="day-stat">48.5 min · longest single turn</div></div>
+        <div class="day-card reveal" style="--c:#34d399"><div class="day-emoji">⚡</div><div class="day-headline">Read the codebase, wrote production code. <strong>Three minutes.</strong></div><div class="day-stat">3.0 min avg turn duration</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTEXT PULSE -->
+<section class="context-section">
+  <div class="context-hero">
+    <div class="container">
+      <div class="section-eyebrow">Understanding AI Memory</div>
+      <div class="section-title">The Context Pulse</div>
+      <div class="section-desc">Every time you send a message, the model reads the entire conversation from scratch. Here's what that actually looks like across a full build.</div>
+    </div>
+  </div>
+
+  <div class="container-wide">
+    <div class="concept-grid">
+      <div class="concept-card reveal" style="--c:#10b981">
+        <div class="concept-num">Concept 01</div>
+        <div class="concept-title">The Context Window</div>
+        <div class="concept-desc">An LLM has no persistent memory. Every single response starts by reading the full conversation — every message, every reply — before generating the next word. That reading window has a hard size limit.</div>
+      </div>
+      <div class="concept-card reveal" style="--c:#06b6d4">
+        <div class="concept-num">Concept 02</div>
+        <div class="concept-title">Summarization</div>
+        <div class="concept-desc">When the window fills completely, Claude pauses and writes a detailed summary — decisions made, code built, what's next. That summary becomes the new starting point. Work continues, but running on distilled memory rather than raw transcript.</div>
+      </div>
+      <div class="concept-card reveal" style="--c:#f59e0b">
+        <div class="concept-num">Concept 03</div>
+        <div class="concept-title">Why Structure Matters</div>
+        <div class="concept-desc">Without specs and task lists, summaries are vague. With them, Claude always has something concrete to anchor to. The specs made those 393 resets coherent — instead of losing thread, each new window started with a clear map of where things stood.</div>
+      </div>
+      <div class="concept-card reveal" style="--c:#ef4444">
+        <div class="concept-num" style="color:#ef4444">The Spike</div>
+        <div class="concept-title">Security Audit Day</div>
+        <div class="concept-desc"><strong style="color:#ef4444;font-size:22px;font-family:'SF Mono','Cascadia Code',monospace">63</strong> context resets in a single session. <strong>123 MB</strong> of conversation data. Every RLS policy, every auth boundary, every privilege escalation path — audited, fixed, re-audited. Claude hit its memory limit 63 times and kept going each time. The specs were the only reason the summaries stayed coherent.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container-wide" style="margin-top:48px">
+    <div class="pulse-player">
+      <div class="pulse-player-top">
+        <div class="pulse-player-info">
+          <span id="pl-num" style="color:var(--text);font-weight:600">Session 1 / 45</span>
+          &nbsp;&middot;&nbsp;<span id="pl-resets">0</span> resets
+          &nbsp;&middot;&nbsp;<span id="pl-size">0</span> MB
+          &nbsp;&middot;&nbsp;<span id="pl-msgs">0</span> messages
+        </div>
+        <div class="pulse-player-btns">
+          <button class="pl-btn" id="pl-speed">0.25&times;</button>
+          <button class="pl-btn" id="pl-btn">&#9646;&#9646;</button>
+        </div>
+      </div>
+      <div id="pulse-wrap"><svg id="pulse-svg" style="cursor:pointer;display:block;width:100%"></svg></div>
+      <div class="pulse-legend">
+        <span class="pleg"><i style="background:#10b981"></i>1–5 resets</span>
+        <span class="pleg"><i style="background:#06b6d4"></i>6–15 resets</span>
+        <span class="pleg"><i style="background:#f59e0b"></i>16–30 resets</span>
+        <span class="pleg"><i style="background:#ef4444"></i>31+ resets</span>
+        <span class="pleg" style="margin-left:auto;color:#475569">Thin slices = many resets &nbsp;&middot;&nbsp; Fat blocks = calm session &nbsp;&middot;&nbsp; Click to scrub</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LESSONS -->
+<section class="prose">
+  <div class="container">
+
+    <h2>Hard lessons</h2>
+    <p><strong>Long sessions degrade.</strong> After 60+ messages the reasoning about subtle constraints would start slipping — not dramatically, just quietly. You wouldn't notice until something was already built wrong. Shorter sessions with tight handoff documents beat marathons every single time. The model is better rested than you are; the problem is usually that you kept going past the point of diminishing returns.</p>
+    <p><strong>The fix: the 80/20 rule.</strong> At roughly 80% context used — monitored manually — stop. Review open threads, update specs and task lists, write a clean handoff note for the next session. The model has no idea how full its context window is. That awareness has to be yours. The last 20% of the window is worth more spent on review than on code. Once this became habit, session quality improved noticeably. Fewer regressions. Cleaner continuity. Less staring at the screen at 11pm wondering where it went wrong.</p>
+    <p><strong>Schema drift is a special kind of expensive.</strong> Moving fast, it's easy to run a database migration and forget to update the canonical schema file. Twice this created cascading phantom <code>DROP TABLE</code> statements that took hours to untangle — the database equivalent of a horror movie where everything looks fine until suddenly it really isn't. Schema file updated in the same commit as every migration, no exceptions. Learned that the hard way. Then wrote it into CLAUDE.md so it couldn't be forgotten again.</p>
+    <p><strong>You can't delegate judgment.</strong> There were moments where a confident, well-reasoned suggestion was wrong for reasons Claude couldn't know: business domain specifics, a regulatory nuance, an edge case in how customers actually work in the field. Those moments required me to be the expert in the room. The whole system only works if you stay in the driver's seat. It's a very fast car. You still have to steer.</p>
+
+    <hr>
+
+    <h2>The real takeaway</h2>
+    <p>AI didn't replace engineering judgment. It amplified it. Every architectural decision, every data model choice, every tradeoff was mine. Claude executed faster than any team I could have assembled — and unlike a team, it never pushed back on a 6am start time or had opinions about the sprint planning format. But execution without judgment is just fast mistakes.</p>
+    <p>What changed is the cost of exploration. You can afford to be wrong, back up, and try a different approach when a wrong turn costs an afternoon instead of a sprint. You take more swings. You question assumptions you'd have just accepted before. Some of the best architectural decisions on this project came from asking "wait, what if we did it completely differently?" — a question I would never have had budget to ask with a traditional team.</p>
+    <p><strong>You can't treat projects of this scale like a normal chat session. What made it work wasn't the model — it was the structure around it. The specs, the task lists, the AGENTS.md files. That's the part that doesn't show up in the demos. That's also the part we're taking into everything we build next.</strong></p>
+
+  </div>
+</section>
+
+<!-- FOUNDERS -->
+<div class="founders-section">
+  <div class="founders-grid">
+    <a href="https://www.linkedin.com/in/jake-edwards-a6a334a/" target="_blank" rel="noopener" class="founder-card" style="text-decoration:none;display:block;cursor:pointer">
+      <div class="founder-name">Jake Edwards</div>
+      <div class="founder-role">Co-Founder &nbsp;&middot;&nbsp; Engineering</div>
+      <div class="founder-bio">Former Director of Engineering, principal engineer by nature. I've spent my career building complex systems — the kind that have to actually work in production. I know what it costs when architecture decisions are made wrong early. AthenaForms is me building the software I always wished existed.</div>
+    </a>
+    <a href="https://www.linkedin.com/in/tim-boyer-a0144114/" target="_blank" rel="noopener" class="founder-card" style="text-decoration:none;display:block;cursor:pointer">
+      <div class="founder-name">Tim Boyer</div>
+      <div class="founder-role">Co-Founder &nbsp;&middot;&nbsp; Safety &amp; Domain</div>
+      <div class="founder-bio">Deep field experience in OSHA compliance, near-miss reporting, and serious injury and fatality prevention. Tim is the reason AthenaForms solves real problems instead of imagined ones — the domain knowledge that makes the difference between software that looks right and software that works in the field.</div>
+    </a>
+  </div>
+</div>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="container">
+    <div class="cta-title">Get early access to AthenaForms.</div>
+    <p class="cta-sub">Enterprise safety compliance built by engineers who care about the data model. Classification-based access control. Audit log on every mutation. API-first with webhooks, SSO, and real RLS — not bolted on after the fact. For safety teams that are tired of tools that don't.</p>
+    <div class="cta-chips">
+      <span class="cta-chip">Classification-based access control</span>
+      <span class="cta-chip">Multi-tenant row-level security</span>
+      <span class="cta-chip">Audit log on every mutation</span>
+      <span class="cta-chip">API-first + webhooks</span>
+      <span class="cta-chip">SSO / SAML 2.0</span>
+      <span class="cta-chip">Form version history</span>
+      <span class="cta-chip">Workflow engine + SLA tracking</span>
+      <span class="cta-chip">Built-in report builder</span>
+    </div>
+    <p class="cta-launch" style="color:var(--green);font-family:'SF Mono','Cascadia Code',monospace;font-size:16px;font-weight:600;margin-bottom:32px;letter-spacing:.02em">Launching soon.</p>
+    <a class="cta-btn" href="https://elementalinsights.com">Get Early Access</a>
+  </div>
+</section>
+
+<footer>
+  <span>&copy; 2026 Elemental Insights &middot; AthenaForms&#x2122;</span>
+  <span style="display:flex;gap:20px;align-items:center">
+    <a href="https://www.linkedin.com/in/jake-edwards-a6a334a/" target="_blank" rel="noopener" style="color:var(--muted);text-decoration:none">Jake ↗</a>
+    <a href="https://www.linkedin.com/in/tim-boyer-a0144114/" target="_blank" rel="noopener" style="color:var(--muted);text-decoration:none">Tim ↗</a>
+    <a href="https://elementalinsights.com" style="color:var(--muted);text-decoration:none">elementalinsights.com</a>
+  </span>
+</footer>
+
+<div id="tip"></div>
+
+<script>
+const DATA={"sessions":[{"id":"C:\\Users","slug":"greedy-wandering-ritchie","branch":"master","start":"2026-02-03T03:03:50.615Z","end":"2026-02-03T08:24:51.810Z","sizeMB":8.6,"userMsgs":569,"assistantMsgs":1201,"records":2686,"compacts":5,"compactPos":[0.1574832464631422,0.38049143708116157,0.45606850335070737,0.7021593447505584,0.9158600148920327],"turns":[71588,253822,70030,47863,90658,72312,33529,158350,151915,298256,292793,46081,392764,212088,266132,51839,45064,75924,70616,184166,111462,41109,58583,99308,44026,71824,51772,41590,474418,236714,194509,249502,316575,57941,252300,211924,172482,118793,128380,112708,507891,30659],"apiErrors":0,"topTools":[["Bash",175],["Read",130],["Edit",118],["Write",46],["Grep",19]],"topEdits":[["page.tsx",35],["test-org-tree.actions.ts",21],["01-org-tree.md",11]]},{"id":"C:\\Users","slug":"bright-snuggling-ember","branch":"master","start":"2026-02-03T08:26:19.719Z","end":"2026-02-04T15:15:50.634Z","sizeMB":36.2,"userMsgs":2301,"assistantMsgs":5096,"records":10913,"compacts":21,"compactPos":[0.04242646385045359,0.09511591679648126,0.15366993493997985,0.19114817190506736,0.2606066159626134,0.32630807294052966,0.3740492990011912,0.4084119857051223,0.4471730963071566,0.4968386328232383,0.5405479703106387,0.5956199028681389,0.6424447906166957,0.6849628882983597,0.7350865939704939,0.7846604966553652,0.8143498579675617,0.8598918720791716,0.8938880234582608,0.9190873270411436,0.9630715660221754],"turns":[113302,146231,88542,102280,97434,419016,273630,131706,56803,39093,149046,54678,106576,43163,411239,36209,279974,54089,34416,43975,90035,52147,191581,79071,111305,305533,85479,99892,52268,205881,32584,70120,492973,75079,44392,165573,31187,81063,71840,109517,113206,318192,51806,40778,251803,31627,113672,39816,166653,259748,39826,82657,702291,146325,132686,313107,36474,30325,61696,69538,225880,45949,47469,49592,147799,38421,42944,515793,36762,85089,54715,41221,132426,447750,317221,32297,107060,178075,80946,369020,58570,46008,37268,347640,210159,118062,30490,175162,56489,60091,183905,41757,134468,48386,133453,36747,45135,35913,66491,37248,317102,463514,251936,585433,153511,45317,188683,91667,88684,82000,48392,361296,116930,50161,74880,51563,35479,101664,157219,40289,51666,575014,73342,78940,45419,124565,44091,77172,32833,118967,39103,107299,225458,132639,617931,146611,104634,287114,177632,35861,56087,102609,309254,55234,52194,306582,169341,193243,486558,273428,252461,139638,56790,33528,120711,118438,94023,50275],"apiErrors":0,"topTools":[["Edit",683],["Bash",565],["Read",389],["Write",116],["Grep",95]],"topEdits":[["org-tree-detail-panel.tsx",91],["org-tree-layout.tsx",60],["type-detail-panel.tsx",45]]},{"id":"C:\\Users","slug":"floofy-plotting-bird","branch":"master","start":"2026-02-04T14:00:03.301Z","end":"2026-02-04T14:01:09.875Z","sizeMB":0.2,"userMsgs":3,"assistantMsgs":7,"records":13,"compacts":0,"compactPos":[],"turns":[66559],"apiErrors":0,"topTools":[["Bash",1],["Read",1]],"topEdits":[]},{"id":"C:\\Users","slug":"whimsical-exploring-rivest","branch":"master","start":"2026-02-04T14:11:00.620Z","end":"2026-02-05T07:37:59.941Z","sizeMB":13.9,"userMsgs":966,"assistantMsgs":2088,"records":4455,"compacts":9,"compactPos":[0.12480359147025814,0.22850729517396184,0.3288439955106622,0.4161616161616162,0.4769921436588103,0.6388327721661055,0.6978675645342312,0.8291806958473625,0.9887766554433222],"turns":[40501,47542,162593,129093,56604,43535,81987,44295,49816,77861,349235,165875,274816,170152,40346,35292,80119,421837,291922,42090,32146,64718,58572,33709,165998,125537,108499,42709,40281,83290,110580,74019,240966,49636,47252,47578,159926,152245,41550,308363,44498,143416,51070,51906,205899,52335,31076,224299,48597,79561,65130,34096,41031,204806,97339,199104,55888,132213,35873,42816,436021,217787,165475,38850,86915,66859,72422,59484,39622,275194,45856,79077,34067,505266,126096,105757,167157,58601,63216],"apiErrors":0,"topTools":[["Edit",298],["Bash",211],["Read",196],["Write",65],["Glob",31]],"topEdits":[["saved-filters-list.tsx",50],["query-builder.tsx",33],["dashboard-grid.tsx",20]]},{"id":"C:\\Users","slug":"sequential-discovering-pancake","branch":"master","start":"2026-02-04T15:16:11.107Z","end":"2026-02-06T03:10:03.323Z","sizeMB":10.8,"userMsgs":851,"assistantMsgs":1901,"records":3779,"compacts":6,"compactPos":[0.13786716062450383,0.2304842550939402,0.36279439005027786,0.5347975654935168,0.7097115639057952,0.8232336596983328],"turns":[87817,161137,37088,42919,68084,60243,78578,198233,123893,163773,233545,40880,281631,58842,436157,55278,40634,88465,220554,112532,209505,775569,56768,80163,36662,33145,68740,181179,79209,239956,84922,159078,175155,102298,151687,132975,41113,58782,62687,72004,185279,56894,109145,115057,168659,159930,427625,599497,244261],"apiErrors":0,"topTools":[["Bash",268],["Read",202],["Edit",168],["Write",51],["Grep",21]],"topEdits":[["page.tsx",6],["api.ts",6],["C:/Projects/athenaforms-master-plan/athenaforms/packages/features/documents/src/server/api.ts",6]]},{"id":"C:\\Users","slug":"resilient-strolling-charm","branch":"feature/reporting-engine","start":"2026-02-06T03:12:27.050Z","end":"2026-02-08T02:26:50.144Z","sizeMB":46.2,"userMsgs":2881,"assistantMsgs":6319,"records":13564,"compacts":24,"compactPos":[0.053818932468298435,0.09407254497198467,0.13071365378944264,0.1809938071365379,0.22316425833087586,0.2625331760542613,0.2920967266293129,0.3275582424063698,0.3636832792686523,0.40895016219404307,0.44699203774697727,0.4840017693895606,0.5248451784134474,0.5647301680920083,0.6125774107932763,0.6547478619876143,0.6860808021232675,0.7264081391919788,0.7601002654084341,0.8069890887643763,0.8403125921557063,0.8585225597168976,0.9012090828664111,0.958935417281038],"turns":[188681,308497,269388,77151,53526,180177,144859,36621,306142,80888,79566,341803,53098,134487,202258,322848,90115,296655,60208,164329,683722,140463,33205,87841,114028,116090,217097,33399,58704,321826,351273,409431,127947,38438,145287,443192,132837,56107,73161,58444,30138,176774,55803,144258,552017,149849,70860,126727,419245,31877,79948,106231,187995,154634,110054,47456,442788,30364,69219,67250,82638,44229,48467,190082,34577,39911,48467,196402,72564,87138,79343,49749,33273,59141,56802,40287,289381,52702,33196,44683,54671,34422,111915,43535,60525,39465,150825,96674,49971,48330,219916,339555,72076,108687,86242,49359,39252,137155,200149,149144,110599,113956,84627,58783,55943,133299,190900,76909,110031,61784,43781,56162,46388,64864,51234,34428,218644,90635,46550,34583,36393,60370,51137,41472,52624,142599,82494,81207,131930,33302,36123,36677,51939,87699,116080,57196,33124,66323,244762,188508,148489,69435,77424,99620,97374,169549,65447,62250,32334,100056,47206,40292,45276,113144,277916,141653,119310,152724,135297,344970,229561,49752,181164,112299,108972,100305,79749,65596,64690,55704,62059,39446,85320,118437,33994,170873,491964,143161,132964,195167,641224,913640,531108,1060671],"apiErrors":0,"topTools":[["Edit",845],["Read",654],["Bash",615],["Grep",114],["Glob",105]],"topEdits":[["document-editor-page.tsx",92],["access-checker-content.tsx",47],["document-tree-view.tsx",37]]},{"id":"C:\\Users","slug":"inherited-yawning-mitten","branch":"feature/reporting-engine","start":"2026-02-06T07:15:50.895Z","end":"2026-02-06T11:04:23.068Z","sizeMB":8.3,"userMsgs":536,"assistantMsgs":1187,"records":2708,"compacts":4,"compactPos":[0.17688330871491875,0.3652141802067947,0.6059822747415067,0.8131462333825702],"turns":[103210,43491,69780,46538,42492,33881,228794,35303,31892,33265,117674,32875,147069,407920,209112,174946,231254,231504,212043,44407,259953,315693,83453,55696,70988,47993,1156273,85374,65617,127414,60331,93445,63260,39817,125737,68236,82099,112986,328670,109775,156762,265333,187175,80726],"apiErrors":0,"topTools":[["Edit",171],["Bash",98],["Read",96],["Write",57],["Glob",14]],"topEdits":[["help-content.tsx",44],["actions.ts",18],["api.ts",16]]},{"id":"C:\\Users","slug":"witty-frolicking-lemur","branch":"feature/reporting-engine","start":"2026-02-06T10:55:37.309Z","end":"2026-02-06T11:08:30.288Z","sizeMB":1.2,"userMsgs":15,"assistantMsgs":29,"records":294,"compacts":0,"compactPos":[],"turns":[],"apiErrors":0,"topTools":[["Task",4],["Read",4],["EnterPlanMode",1],["Write",1],["ExitPlanMode",1]],"topEdits":[["witty-frolicking-lemur.md",1]]},{"id":"C:\\Users","slug":"witty-frolicking-lemur","branch":"feature/reporting-engine","start":"2026-02-06T11:08:30.286Z","end":"2026-02-08T02:26:16.830Z","sizeMB":32.9,"userMsgs":1868,"assistantMsgs":4165,"records":9205,"compacts":17,"compactPos":[0.06355241716458447,0.13709940249864205,0.19435089625203694,0.2557305812058664,0.30048886474741987,0.36230309614340034,0.4329168929929386,0.49560021727322107,0.5490494296577947,0.6111895708853884,0.663335143943509,0.7057034220532319,0.7467680608365019,0.7918522542096686,0.8514937533948941,0.9204780010863661,0.9655621944595328],"turns":[366260,294310,202690,225729,549246,182028,251661,219358,95737,82563,59492,54676,44210,166050,1015430,200671,207183,70376,178740,271993,231272,85131,191367,86077,120500,97801,258651,80683,95069,77747,63756,31682,86478,46513,35158,67159,147083,90385,674440,56640,61884,46642,275242,68728,131089,822318,123518,92411,55011,137750,41012,34494,251788,34240,32349,40644,67881,33939,31316,115417,32409,73559,38978,118010,117761,230350,41673,43768,89589,55324,129322,68277,33918,121696,40715,45662,50022,42774,233351,157393,101394,69818,43425,190628,182888,154426,35458,31931,417193,95519,30982,97866,228865,315805,45154,210775,87110,69566,114445,379049,412386,105720,121260,141867,271347,368860,59544,270776,89912,41560,87057,1116715,296917,136879,154331,189686,57203,53002,91272,35714,39105,672380],"apiErrors":0,"topTools":[["Edit",544],["Read",388],["Bash",377],["Write",108],["Grep",70]],"topEdits":[["stress_test_seed.sql",49],["mobile-forms-manager.tsx",46],["mobile-submissions-view.tsx",39]]},{"id":"C:\\Users","slug":"virtual-seeking-gizmo","branch":"feature/reporting-engine","start":"2026-02-06T21:10:07.198Z","end":"2026-02-06T22:00:48.394Z","sizeMB":0.6,"userMsgs":21,"assistantMsgs":50,"records":107,"compacts":0,"compactPos":[],"turns":[37419,255710,50837,89818,79035,91425,166375,84698,145942,245453],"apiErrors":0,"topTools":[["Bash",7],["Write",4]],"topEdits":[["generate-data-model-doc.mjs",1],["generate-entity-vs-classification-guide.mjs",1],["10-property-system.md",1]]},{"id":"C:\\Users","slug":"radiant-yawning-crab","branch":"feature/reporting-engine","start":"2026-02-07T11:17:08.667Z","end":"2026-02-07T11:42:57.928Z","sizeMB":0.6,"userMsgs":38,"assistantMsgs":69,"records":145,"compacts":0,"compactPos":[],"turns":[102461,202933,34685,229238],"apiErrors":0,"topTools":[["Glob",8],["Read",8],["Bash",5],["Edit",4],["WebFetch",3]],"topEdits":[["CLAUDE.md",4],["10-staging-deployment.md",1],["11-cicd-production.md",1]]},{"id":"C:\\Users","slug":"cozy-purring-hopper","branch":"feature/reporting-engine","start":"2026-02-07T11:59:51.757Z","end":"2026-02-07T22:44:39.528Z","sizeMB":3.4,"userMsgs":173,"assistantMsgs":320,"records":947,"compacts":1,"compactPos":[0.8489968321013728],"turns":[407549,48570,62328,102292,105106,255348,64321,114351,131250,358399,57927,31884],"apiErrors":0,"topTools":[["Read",39],["Edit",33],["Bash",32],["Write",17],["TaskUpdate",14]],"topEdits":[["12-production-readiness-review.md",8],["api.ts",4],["api.ts",4]]},{"id":"C:\\Users","slug":"iterative-dancing-babbage","branch":"feature/reporting-engine","start":"2026-02-08T02:35:04.042Z","end":"2026-02-09T00:35:53.019Z","sizeMB":60.7,"userMsgs":743,"assistantMsgs":1651,"records":4267,"compacts":5,"compactPos":[0.1431919381298336,0.27536911178814155,0.41481134286383875,0.5526130771033513,0.7408014998828216],"turns":[64893,147067,98530,46852,41502,34711,47317,85057,30783,287674,232389,135184,55458,45989,42755,161380,166713,35458,30097,280800,41994,100247,78974,110793,105464,111733,48427,180066,30915,167657,95892,147880,89038,220034,312635,64329,196933,72996,174326,287220,79786,155249,377781,58210,130996,142476,345533,77049,85579,150095,75110,94448,67974,157969,127413,88996,57623,266199,105009],"apiErrors":0,"topTools":[["Edit",222],["Bash",190],["Read",120],["Write",34],["Grep",26]],"topEdits":[["manage-restrictions-content.tsx",28],["configure-entity-access-dialog.tsx",26],["page.tsx",19]]},{"id":"C:\\Users","slug":"structured-popping-aurora","branch":"feature/reporting-engine","start":"2026-02-08T02:57:48.843Z","end":"2026-02-11T05:17:18.052Z","sizeMB":3.5,"userMsgs":238,"assistantMsgs":518,"records":1102,"compacts":2,"compactPos":[0.4900181488203267,0.9392014519056261],"turns":[157301,144167,204329,99088,32825,45539,209239,143396,156053,83353,84926,205231,79014,51642,33595,43685,52045,184301,37817,35929,144034,54041],"apiErrors":0,"topTools":[["Edit",72],["Read",59],["Bash",51],["Glob",11],["Grep",10]],"topEdits":[["document-editor-page.tsx",26],["new-form-template-wizard.tsx",12],["ai-message.tsx",9]]},{"id":"C:\\Users","slug":"enchanted-snuggling-backus","branch":"feature/reporting-engine","start":"2026-02-08T08:08:29.873Z","end":"2026-02-09T18:08:58.914Z","sizeMB":34,"userMsgs":1815,"assistantMsgs":4013,"records":8792,"compacts":15,"compactPos":[0.04117379435850774,0.10259326660600546,0.16856232939035487,0.20825750682438582,0.26888080072793447,0.3374658780709736,0.4177661510464058,0.4830527752502275,0.5578935395814377,0.6267060964513194,0.7060964513193813,0.794813466787989,0.8743175614194723,0.9481346678798908,0.9995450409463148],"turns":[35979,213202,347436,177107,74060,93786,67235,380631,61446,348720,126969,259721,32493,83782,164843,192706,154726,49123,92172,40110,175505,46941,71922,160408,44708,39933,49715,75222,100323,70733,71268,35017,77231,278669,33681,67608,46899,32850,186460,85843,81839,44818,43400,44306,49151,40590,297813,143936,116245,35864,179035,70132,148386,36726,161184,130614,161816,93020,32088,47536,77428,165788,40680,125052,192942,64226,80876,36100,318843,76874,30645,51454,32424,67965,48411,66342,164687,202775,116384,170991,133222,80790,111043,36413,95040,103177,89055,306082,123977,118876,40644,40368,146497,69710,35082,105509,35501,47662,51911,35813,218904,62663,32171,233714,260423,116262,64007,165384,145442,35416,58614,32730,52437,55532,40777,215879,57061,63288,221985,96446,93408,82814,88304,35300,142412,157896,73643,83757,46609,46140,368815,320441,138893,63002,58350,98262,33240,247867,147598,30481,53328,259115,121226,62069,198086,210066,41407,61383,40210,42313,51233,64838,39552,140886,45981,199335,35495,73325,78407,73460,80441,30480,35568,46414,87157,42656,42164,168639],"apiErrors":0,"topTools":[["Edit",544],["Read",382],["Bash",304],["Grep",92],["Write",79]],"topEdits":[["templates-tab.tsx",89],["template-editor.tsx",83],["api.ts",34]]},{"id":"C:\\Users","slug":"proud-crafting-fern","branch":"feature/reporting-engine","start":"2026-02-08T09:07:30.285Z","end":"2026-02-08T09:34:13.890Z","sizeMB":1.3,"userMsgs":89,"assistantMsgs":200,"records":379,"compacts":0,"compactPos":[],"turns":[81426,73982,256318,224351],"apiErrors":0,"topTools":[["Bash",26],["Read",22],["Edit",17],["Glob",5],["Grep",4]],"topEdits":[["athenaforms/packages/features/forms/src/components/fields/fields/SupabaseFileField.tsx",7],["athenaforms/packages/features/forms/src/components/form-renderer.tsx",6],["athenaforms/packages/features/forms/src/types/form-builder.ts",3]]},{"id":"C:\\Users","slug":"sprightly-launching-mango","branch":"feature/reporting-engine","start":"2026-02-09T11:11:14.503Z","end":"2026-02-11T05:36:20.099Z","sizeMB":11.9,"userMsgs":559,"assistantMsgs":1219,"records":2804,"compacts":5,"compactPos":[0.2796005706134094,0.44436519258202567,0.7157631954350927,0.8327389443651926,0.9803851640513552],"turns":[272033,185194,167701,181323,41294,64485,35321,46074,68605,135499,122670,52697,222275,290160,236438,89750,116853,65915,110398,47608,76196,66422,38297,36896,33196,32395,37372,83438,30542,50905,176943,210379,85481,59699,213624,37960,36596,42888,33252,717306,102377,47263,33945,32241,32994,38937,40608,48734,143352,137255,82394,67389,178494],"apiErrors":0,"topTools":[["Edit",233],["Read",89],["Bash",44],["Grep",42],["Glob",25]],"topEdits":[["favorites-panel.tsx",62],["api.ts",28],["template-editor.tsx",17]]},{"id":"C:\\Users","slug":"sparkling-skipping-goose","branch":"feature/reporting-engine","start":"2026-02-09T17:58:46.046Z","end":"2026-02-11T07:11:06.502Z","sizeMB":19.9,"userMsgs":1163,"assistantMsgs":2399,"records":5765,"compacts":10,"compactPos":[0.13633998265394623,0.24284475281873374,0.3113616652211622,0.38352124891587164,0.5045967042497832,0.6194275802254987,0.7398091934084996,0.8392020815264527,0.9210754553339116,0.9887250650477016],"turns":[74090,48836,64991,323136,33645,229726,102441,385946,38728,55212,166718,512633,346682,171468,42063,40157,354524,375899,239501,88281,46376,58817,185648,241096,44994,61601,46576,51304,57380,113996,61496,118402,61067,87358,70727,208642,533447,228120,115760,129384,395025,65585,108454,81216,56581,53169,118298,61791,147781,36242,63619,85567,53126,31228,169557,616371,37317,128629,81437,33839,34460,71485,41701,61950,32437,186556,274365,37547,48421,63757,167866,42963,103863,97541,134354,37233,73574,73880,255075,196545,521689,73947,83305,262128,345290,155388,385012,90566],"apiErrors":0,"topTools":[["Edit",456],["Bash",196],["Read",157],["Write",49],["TaskUpdate",31]],"topEdits":[["assets-table.tsx",160],["assets-manager.tsx",91],["CLAUDE.md",25]]},{"id":"C:\\Users","slug":"merry-spinning-pike","branch":"feature/reporting-engine","start":"2026-02-11T07:12:06.671Z","end":"2026-02-13T01:21:13.761Z","sizeMB":26.1,"userMsgs":1253,"assistantMsgs":2742,"records":5994,"compacts":12,"compactPos":[0.040373707040373706,0.11695028361695028,0.21888555221888556,0.28178178178178176,0.3875542208875542,0.48281614948281615,0.579245912579246,0.6628294961628295,0.7409075742409076,0.828661995328662,0.8913913913913913,0.9773106439773106],"turns":[57628,51311,220712,40158,260712,32918,46235,78182,57556,76809,430812,148794,178891,224406,239706,370593,203907,67163,67868,35484,39104,42712,441780,35167,223777,82276,94253,89568,100981,48316,44526,125342,137677,115986,64982,61098,274280,53579,71987,73847,130858,33079,79600,133217,68274,32725,359624,110645,35600,56090,37005,93014,48796,34686,36363,111413,53409,40257,271402,126373,32728,77804,101238,113812,36782,34838,39325,37450,79673,261711,44379,72991,78133,41986,218012,66156,145646,64158,68162,71616,97508,190706,232484,55712,162239,45644,72014,79629,42976,31691,32736,50472,136399,321276,99671,49549,103048,72439,121364,56628,42673,147516,265962],"apiErrors":0,"topTools":[["Edit",361],["Read",295],["Bash",207],["Grep",91],["Glob",55]],"topEdits":[["document-editor-page.tsx",124],["document-tabs.tsx",29],["token-sidebar.tsx",28]]},{"id":"C:\\Users","slug":"moonlit-riding-neumann","branch":"feature/reporting-engine","start":"2026-02-11T07:24:34.544Z","end":"2026-02-11T07:39:55.926Z","sizeMB":1.6,"userMsgs":47,"assistantMsgs":83,"records":458,"compacts":0,"compactPos":[],"turns":[122403,49167,86268],"apiErrors":0,"topTools":[["Read",12],["Grep",10],["Glob",8],["Task",4],["Bash",2]],"topEdits":[]},{"id":"C:\\Users","slug":"frolicking-spinning-graham","branch":"feature/reporting-engine","start":"2026-02-11T08:24:58.272Z","end":"2026-02-13T01:50:34.034Z","sizeMB":24.4,"userMsgs":1499,"assistantMsgs":3421,"records":7285,"compacts":11,"compactPos":[0.09444063143445436,0.21564859299931366,0.315442690459849,0.39958819492107067,0.508716540837337,0.5902539464653397,0.6432395332875772,0.7376801647220316,0.8237474262182567,0.8955387783115992,0.9766643788606726],"turns":[185800,61485,130306,88501,76245,52185,87858,136357,78415,34500,194716,40744,69906,36978,119459,81667,34644,83793,212795,196606,85800,34729,80876,35882,274534,65471,30734,145111,40535,312431,72501,138431,41867,88013,84292,219112,148923,332368,34315,92521,32126,40441,63510,460739,43159,46519,241392,212046,113430,101273,127295,107215,43017,45299,48898,37316,455784,61110,36059,277637,162831,530005,306290,135560,241082,36818,42401,42676,269586,332637,41040,306580,42932,216927,96876,36811,36409,275788,34051,78961,58895,87292,133054,130560,80222,35082,112339,30330,56520,198282,31411,177163,55609,57571,108036,78108,48456,84945,49065,41338,34351,37546,33082,113339,44608,52315,254409,30033,91186,45026,57314,39673],"apiErrors":0,"topTools":[["Edit",533],["Read",274],["Bash",192],["Grep",139],["Write",79]],"topEdits":[["form-submission-editor.tsx",54],["details-tab.tsx",35],["form-automation-tab.tsx",32]]},{"id":"C:\\Users","slug":"gentle-cuddling-comet","branch":"feature/reporting-engine","start":"2026-02-16T08:07:24.777Z","end":"2026-02-17T01:52:35.801Z","sizeMB":12.9,"userMsgs":774,"assistantMsgs":1552,"records":3328,"compacts":6,"compactPos":[0.10186298076923077,0.16766826923076922,0.3368389423076923,0.5354567307692307,0.7124399038461539,0.9266826923076923],"turns":[32590,37884,53918,44074,32151,91930,56260,197489,109365,165847,80388,53158,44627,77045,183758,384295,159111,39176,256297,225786,35950,236873,519117,97396,138112,106389,123555,61090,121788,154385,34086,108268,191975,60973,39595,54252,51077,78163,30209,60856,195377,413249,236279,83912,77064,48831,35732,32020,40370,75832,440882],"apiErrors":0,"topTools":[["Edit",230],["Read",171],["Bash",111],["Grep",80],["Glob",43]],"topEdits":[["form-designer.tsx",27],["node-users-tab.tsx",22],["form-renderer.tsx",16]]},{"id":"C:\\Users","slug":"wobbly-dazzling-prism","branch":"feature/reporting-engine","start":"2026-02-17T01:18:54.455Z","end":"2026-02-17T15:43:05.517Z","sizeMB":12.4,"userMsgs":589,"assistantMsgs":1361,"records":2962,"compacts":4,"compactPos":[0.16306549628629305,0.3261309925725861,0.5921674544226874,0.824442943956786],"turns":[51493,256650,76453,72089,112765,84928,150042,161114,45599,258171,79601,142470,266202,48969,79078,43887,69362,39392,35371,31317,38197,224088,67817,56390,113956,43124,85167,143821,136699,126610,59307,222336,55777,66912,88652,31176,367242,126651,77930,242796,75945,70758,73523,66909,127139,30492,57701,99864,67252,36715,36112,48778],"apiErrors":0,"topTools":[["Edit",241],["Read",131],["Bash",57],["Grep",53],["Write",11]],"topEdits":[["ai-chat-panel.tsx",60],["ai-tool-result.tsx",27],["mobile-form-filler.tsx",25]]},{"id":"C:\\Users","slug":"twinkling-bouncing-liskov","branch":"feature/reporting-engine","start":"2026-02-18T12:53:28.631Z","end":"2026-02-18T15:33:35.854Z","sizeMB":12.2,"userMsgs":579,"assistantMsgs":890,"records":2792,"compacts":5,"compactPos":[0.22922636103151864,0.3578080229226361,0.5848853868194842,0.9831661891117478,0.995702005730659],"turns":[31984,39546,169003,202064,465856,240268,43703,276979,225616,339554,449175,2613616,109048,656081],"apiErrors":0,"topTools":[["Read",152],["Edit",130],["Grep",89],["Bash",41],["Write",40]],"topEdits":[["10-task-list.md",38],["users-list.tsx",9],["api.ts",6]]},{"id":"C:\\Users","slug":"nifty-skipping-moth","branch":"feature/reporting-engine","start":"2026-02-18T15:34:40.794Z","end":"2026-02-19T07:32:15.830Z","sizeMB":13.4,"userMsgs":511,"assistantMsgs":785,"records":2833,"compacts":4,"compactPos":[0.13836921990822448,0.32439110483586303,0.48499823508648077,0.9647017296152488],"turns":[301079,56896,163054,364460,942406,41745,657701,618419],"apiErrors":0,"topTools":[["Edit",131],["Read",128],["Bash",104],["Grep",84],["Glob",32]],"topEdits":[["10-task-list.md",32],["api.ts",17],["mobile-submission-editor.tsx",7]]},{"id":"C:\\Users","slug":"wondrous-frolicking-pillow","branch":"feature/reporting-engine","start":"2026-02-19T07:32:03.373Z","end":"2026-02-19T08:13:27.347Z","sizeMB":4.7,"userMsgs":223,"assistantMsgs":351,"records":896,"compacts":1,"compactPos":[0.6629464285714286],"turns":[248661,345810,328714,1209299],"apiErrors":0,"topTools":[["Bash",90],["Edit",62],["Read",38],["Write",14],["Glob",5]],"topEdits":[["api.ts",26],["10-task-list.md",13],["package.json",4]]},{"id":"C:\\Users","slug":"luminous-coalescing-puppy","branch":"feature/reporting-engine","start":"2026-02-19T07:33:09.435Z","end":"2026-02-19T10:08:15.487Z","sizeMB":5.3,"userMsgs":268,"assistantMsgs":461,"records":1291,"compacts":3,"compactPos":[0.16576297443841984,0.4384198295894655,0.6560805577072037],"turns":[47939,50977,82141,44282,99009,73910,58335,48858,45657,47796,207012,110778,244988,50309,433466,50123,182236,106135,185909,360512,105873,786756,51288,490168,31310,72246,44791,51692,38932,38160,38297],"apiErrors":0,"topTools":[["Bash",58],["Read",57],["Edit",40],["Grep",19],["Task",17]],"topEdits":[["10-task-list.md",11],["03-list-pickers.md",6],["01-schema-foundation.md",5]]},{"id":"C:\\Users","slug":"luminous-coalescing-puppy","branch":"feature/reporting-engine","start":"2026-02-19T10:08:15.456Z","end":"2026-02-20T18:03:58.300Z","sizeMB":52.3,"userMsgs":2427,"assistantMsgs":4109,"records":15070,"compacts":24,"compactPos":[0.30763105507631056,0.31844724618447245,0.35938951559389515,0.40039814200398144,0.427936297279363,0.4559389515593895,0.48925016589250164,0.5307896483078964,0.5595222295952222,0.5727936297279363,0.5988055739880558,0.6382879893828799,0.6741207697412077,0.7078964830789648,0.7377571333775713,0.7753815527538155,0.8111479761114797,0.8364963503649635,0.8576642335766423,0.8911081619110817,0.9150630391506304,0.938420703384207,0.9633709356337093,0.9842070338420703],"turns":[676103,453189,32687,40041,42651,79716,63022,149349,38869,1114271,368286,631726,41595,549996,778895,837442,43393,823519,317591,57658,34874,125272,507284,273652,637497,290238,153165,193267,271548,32625,46171,91632,599865,844029,785250,410229,266182,96932,145526,64797,43866,156429,170800,44946,297275,38945,44930,94929,463562,114170,1282939,474165,55187,113795,294329,87734,332814,39742,48480,158865,603249,193615,239501,37756,465466,52957,515473,119137,143185,153203,77663,515466,108053,245934,58728,59068,508534,516651,232186,125920,436131,182612,209828,248553,53263,422569,364047,56472,552449,485066,43287],"apiErrors":0,"topTools":[["Read",643],["Edit",582],["Bash",535],["Grep",161],["Glob",80]],"topEdits":[["calendar-view.tsx",24],["10-task-list.md",23],["C:/Projects/athenaforms-master-plan/athenaforms/packages/features/workflows/src/server/api.ts",17]]},{"id":"C:\\Users","slug":"indexed-honking-marshmallow","branch":"feature/reporting-engine","start":"2026-02-19T11:43:30.272Z","end":"2026-02-20T12:32:36.768Z","sizeMB":25.9,"userMsgs":1246,"assistantMsgs":2187,"records":5281,"compacts":17,"compactPos":[0.10168528687748532,0.16833932967241053,0.21548949062677522,0.2963453891308464,0.3374360916493088,0.40200719560689263,0.45900397651959857,0.492899072145427,0.5462980496118159,0.6114372277977655,0.670138231395569,0.7129331565991289,0.7739064571103957,0.8197311115319068,0.8460518841128574,0.9123272107555387,0.9458435902291232],"turns":[127135,101034,143639,206134,85653,85531,40417,794397,125608,218021,144009,2820527,1960738,481601,38697,1081666,32760,138204,70750,135380,40850,1336913,69529,283794,303815,106730,359717,70050,212028,203732,88483,147877,117755,2202216,34255,2912684,1433939,76006],"apiErrors":0,"topTools":[["Read",365],["Edit",262],["Bash",238],["Grep",139],["Glob",47]],"topEdits":[["submissions-list.tsx",51],["24-forms.sql",31],["workflow-status-bar.tsx",10]]},{"id":"C:\\Users","slug":"joyful-gliding-galaxy","branch":"feature/reporting-engine","start":"2026-02-20T12:09:58.998Z","end":"2026-02-22T12:43:59.107Z","sizeMB":7.6,"userMsgs":387,"assistantMsgs":626,"records":1978,"compacts":4,"compactPos":[0.10313447927199192,0.378159757330637,0.5667340748230536,0.7477249747219413],"turns":[113857,171070,257976,92081,147797,263386,67842,389331,523902,160508,933316,310844,87165,77679,33165,41665,58223,40286,35680,53035,46597,48916,288545,41830,36828,98005,301622,84968,34862,118889,88756,154465,77402],"apiErrors":0,"topTools":[["Bash",109],["Read",85],["Edit",61],["Write",31],["Grep",17]],"topEdits":[["page.tsx",6],["10-task-list.md",5],["page.tsx",5]]},{"id":"C:\\Users","slug":"sparkling-wondering-candy","branch":"feature/reporting-engine","start":"2026-02-20T17:01:28.978Z","end":"2026-02-22T11:44:07.262Z","sizeMB":22.1,"userMsgs":1331,"assistantMsgs":2235,"records":5643,"compacts":15,"compactPos":[0.058302321460216196,0.14052808789650895,0.19617224880382775,0.25943646996278574,0.30427077795498847,0.33067517278043596,0.4109516214779373,0.4713804713804714,0.5270246322877902,0.5665426191741981,0.6060606060606061,0.6608187134502924,0.734006734006734,0.8546872231082757,0.9284068757752968],"turns":[40837,72498,43411,56768,61165,218731,201207,37317,128363,648396,343223,33604,194531,32259,30996,36499,54277,31863,192054,248442,396733,55493,232293,1283328,678415,57194,559667,1045163,483119,709958,490038,294418,40063,349045,468680,132130,110881,601714,1127647,384047,657264,155568,477607,228451,32806,100862,246291,65838,220367,464210,130422,36354,52190,224236,248380,282804,164678,185961,175544],"apiErrors":0,"topTools":[["Bash",358],["Read",338],["Edit",277],["Write",76],["Grep",71]],"topEdits":[["page.tsx",40],["10-task-list.md",28],["index.ts",20]]},{"id":"C:\\Users","slug":"luminous-coalescing-puppy","branch":"feature/reporting-engine","start":"2026-02-20T18:03:58.274Z","end":"2026-02-22T11:37:20.066Z","sizeMB":18.7,"userMsgs":964,"assistantMsgs":1620,"records":5653,"compacts":11,"compactPos":[0.376437289934548,0.4643552096232089,0.5292764903591014,0.6062267822395189,0.6387758712188218,0.6976826463824518,0.7266937909074828,0.7797629577215638,0.8330090217583584,0.9012913497258093,0.9844330444012029],"turns":[351076,74391,214001,72488,113440,66264,538312,41618,133590,281684,485617,44531,37402,164472,372779,128195,153717,31660,374130,38396,143854,322464,33948,397543,304690,101496,43581,469903,35297,277918,400903,36846,146047,124877,144416,103804,520264,279270,44708,840224,71525,283948,55375,585482,331967,32247,375663,250984,32077,94004,78582,136329,126239,288312,302426,438830,75100],"apiErrors":0,"topTools":[["Edit",237],["Read",204],["Bash",199],["Grep",65],["Write",63]],"topEdits":[["10-task-list.md",21],["11-audit-refresh-2026-02-21.md",15],["page.tsx",14]]},{"id":"C:\\Users","slug":"joyful-gliding-galaxy","branch":"HEAD","start":"2026-02-22T12:43:59.082Z","end":"2026-02-23T18:40:58.840Z","sizeMB":33.4,"userMsgs":1483,"assistantMsgs":2465,"records":7528,"compacts":19,"compactPos":[0.053400637619553666,0.0924548352816153,0.12964930924548354,0.15608395324123273,0.18809776833156217,0.21865037194473963,0.2822794899043571,0.3238575982996812,0.41246014877789583,0.4772848034006376,0.554596174282678,0.660201912858661,0.700451647183847,0.7203772582359192,0.7546493092454836,0.8133634431455898,0.8412592986184909,0.8812433581296493,0.9321200850159405],"turns":[872258,202196,212745,83574,232864,125855,33670,154303,391176,574132,159055,309650,796641,505618,214349,195534,443883,44426,31611,50395,100596,103680,167946,326489,379940,126544,680412,311466,52458,362759,157645,189280,148900,55833,199921,105591,568033,1118596,84423,75715,56938,142066,1067566,46647,612833,169783,136361,72004,1501644,62561,98803,922865,252980,93867,233576,81347,63892,32294,44561,203383,99745,87870,79517,40739,31712,70909,236741,113600,90651,40875,87613,72029,35941,156804,54832,275671,124461,132632,216724,68791,697987,43021,142021],"apiErrors":0,"topTools":[["Read",380],["Edit",363],["Bash",246],["Glob",88],["Write",83]],"topEdits":[["actions.ts",20],["C:/Projects/athenaforms-master-plan/athenaforms/apps/web/app/admin/athena-prime/_components/recent-runs-table.tsx",20],["libraries-table.tsx",17]]},{"id":"C:\\Users","slug":"bubbly-stargazing-quokka","branch":"feature/reporting-engine","start":"2026-02-22T12:52:37.735Z","end":"2026-02-22T15:19:54.080Z","sizeMB":1.2,"userMsgs":76,"assistantMsgs":128,"records":337,"compacts":0,"compactPos":[],"turns":[143903,233795,55706,177573],"apiErrors":0,"topTools":[["Bash",24],["Read",21],["Edit",17],["Glob",4],["Write",3]],"topEdits":[["team-account-navigation.config.tsx",7],["support-sheet.tsx",4],["athena-sentinel-page-content.tsx",2]]},{"id":"C:\\Users","slug":"dapper-skipping-pond","branch":"feature/reporting-engine","start":"2026-02-22T15:50:56.361Z","end":"2026-02-24T16:12:42.768Z","sizeMB":40.5,"userMsgs":1656,"assistantMsgs":2801,"records":8455,"compacts":22,"compactPos":[0.046481371969248966,0.08503843879361325,0.15446481371969248,0.21324659964518036,0.2528681253696038,0.29544648137196927,0.3497338852749852,0.37776463630987583,0.40283855706682437,0.43027794204612657,0.49603784742755763,0.5529272619751626,0.6352454169130692,0.6807806031933767,0.7332939089296274,0.7622708456534595,0.7926670609107037,0.8332347723240686,0.8720283855706682,0.9023063276167947,0.9422826729745712,0.9856889414547605],"turns":[38687,44095,132894,147462,60628,57197,812277,527296,69423,485211,130097,110175,67258,95918,202519,59548,171371,40939,1023472,618577,90253,61921,873860,359133,39363,32685,106233,312796,273496,38359,298997,133590,53510,409857,268974,39428,172651,95809,137508,296886,371441,74363,719347,78720,82599,100226,357468,38591,234557,357805,34499,46221,32463,186901,424110,65014,49409,89967,42052,398408,457505,71052,240334,178651,513661,691141,41455,41448,477308,167141,49481,118949,146002,234601,57057,378235,196536,221107,214494,417158,256695,32765,344316,75776,163926,46005,32999,175904,332359,55770,34404,308861,38534,40951,54368,183575,499672,620440,37487,531598,37934,511365,753830,52343,373691,108086,97995,311774,83239,102324,651697,141290,41412,227267,61704],"apiErrors":1,"topTools":[["Read",411],["Edit",410],["Bash",278],["Grep",88],["Write",86]],"topEdits":[["iso27001-isms.ts",46],["28-reporting.sql",19],["10-task-list.md",16]]},{"id":"C:\\Users","slug":"ancient-jumping-cherny","branch":"feature/reporting-engine","start":"2026-02-23T06:18:25.674Z","end":"2026-02-23T06:25:42.085Z","sizeMB":0.5,"userMsgs":11,"assistantMsgs":19,"records":113,"compacts":0,"compactPos":[],"turns":[173206,73857],"apiErrors":0,"topTools":[["Glob",4],["Read",2],["WebFetch",2],["Task",1]],"topEdits":[]},{"id":"C:\\Users","slug":"cheerful-hopping-dove","branch":"feature/reporting-engine","start":"2026-02-23T17:47:19.361Z","end":"2026-02-23T18:53:00.127Z","sizeMB":3.7,"userMsgs":118,"assistantMsgs":207,"records":603,"compacts":1,"compactPos":[0.5953565505804311],"turns":[429806,128815,56584,151070,167914,64698,224574,100635,96657],"apiErrors":0,"topTools":[["Edit",34],["Read",32],["Grep",12],["Bash",9],["Glob",8]],"topEdits":[["templates-tab.tsx",24],["workflows-tabs.tsx",9],["post-release-candidates.md",1]]},{"id":"C:\\Users","slug":"joyful-gliding-galaxy","branch":"HEAD","start":"2026-02-23T18:40:58.800Z","end":"2026-02-26T17:43:16.308Z","sizeMB":123.4,"userMsgs":4622,"assistantMsgs":7801,"records":23445,"compacts":63,"compactPos":[0.016634676903390915,0.024397526124973343,0.04380464917892941,0.06483258690552357,0.0780123693751333,0.09383663894220516,0.11870334826188952,0.1216464064832587,0.12565579014715292,0.13606312646619748,0.15384943484751545,0.1749200255918106,0.19714224781403283,0.21215611004478566,0.22490936233738537,0.23988057155043718,0.2490936233738537,0.2656429942418426,0.2869268500746428,0.32339518020899977,0.3346982298997654,0.3443804649178929,0.36114310087438684,0.38421838345062914,0.39530816805288976,0.4252505864789934,0.43561526978033693,0.4533162721262529,0.46777564512689274,0.48278950735764553,0.4889741949242909,0.49916826615483045,0.5137129451908723,0.5413947536788227,0.562635956493922,0.5795692045212198,0.6127105992748987,0.6289613990189806,0.6410748560460653,0.6531030070377479,0.6702921731712519,0.6871827681808488,0.6949456174024312,0.709746214544679,0.7243335465984219,0.7383663894220516,0.745617402431222,0.7588824909362337,0.7741096182554916,0.800682448283216,0.8177436553636169,0.8262742589038174,0.8354020046918319,0.8532736191085519,0.8634676903390915,0.8810407336319045,0.8996374493495415,0.9138835572616762,0.929153337598635,0.9465984218383451,0.9643847302196631,0.9753892087865217,0.9966304116016208],"turns":[454692,523107,226583,95274,111237,35126,118212,556337,60192,61460,77325,329892,36973,33781,566783,39888,32309,39811,37038,170132,49148,60991,224384,72883,132668,199720,1132817,346494,793363,61693,113010,97502,288939,52048,205491,47230,66173,667999,246427,96250,796589,80547,31715,154220,107453,192882,58786,165349,50522,138177,171821,42530,140197,35364,36641,33278,42045,178060,30373,46479,31133,122170,33238,85785,48613,138901,53428,52790,114621,76993,486411,36848,55009,77147,1073006,30457,983967,127081,118949,55330,140793,74932,173360,297071,62463,61523,232866,443335,87811,45069,166511,1050276,308511,215178,43534,806316,92272,65866,53318,34199,128356,70181,45744,65166,427327,67253,69948,131013,129576,176008,31078,417598,107482,81198,89912,325614,122719,30013,209941,206660,285415,465299,175425,221457,73398,62175,472561,72119,54304,52328,188701,89382,268376,49751,98328,81575,93407,73312,106943,63584,72561,364890,91483,47615,84906,149249,39783,57020,85089,34388,95656,101887,173228,51821,57732,650336,552532,1025589,136455,249840,236868,162629,1046623,194217,65091,516557,81055,434640,80275,296136,511485,47851,140114,111675,435969,43017,221023,76982,44700,148321,452660,351455,281478,52135,128957,234236,1367359,194397,470969,223468,62575,527225,81849,55727,215968,393133,75189,71454,37526,430156,57232,378353,286842,145722,526285,36358,92261,76246,208649,43699,841042,94603,155886,1036302,440343,146365,666347,384377,130686,31523,57355,334258,281658,35083,36027,316494,509127,339672,1303467,160430,44506,93698,45991,57660,61672,224605,86318,391097,595580,266396,514149,563231,40960,139847,251415,262544,878626,542563,189546,68387,304714,571394,31603,189712,432120,59034,87817,62336,206006,124337,39549,124873,328229,129532,232418,108336],"apiErrors":0,"topTools":[["Read",1276],["Edit",1269],["Grep",472],["Bash",388],["Glob",244]],"topEdits":[["safety-events-hub.ts",79],["bbs-observation.ts",65],["AGENTS.md",36]]},{"id":"C:\\Users","slug":"cheerful-hopping-dove","branch":"feature/reporting-engine","start":"2026-02-23T18:53:00.091Z","end":"2026-02-24T07:53:05.821Z","sizeMB":10,"userMsgs":538,"assistantMsgs":864,"records":2337,"compacts":4,"compactPos":[0.20967051775780915,0.4124946512623021,0.5331621737270005,0.6837826272999572],"turns":[110573,202471,63033,41044,100458,726060,55342,32729,2289833,357043,347593,38951],"apiErrors":0,"topTools":[["Edit",178],["Read",162],["Bash",100],["Grep",30],["Glob",16]],"topEdits":[["/c/Projects/athenaforms-master-plan/athenaforms/apps/web/app/home/[account]/workflows/_components/workflow-queue.tsx",11],["26-assets.sql",11],["api.ts",11]]},{"id":"C:\\Users","slug":"luminous-frolicking-wozniak","branch":"feature/reporting-engine","start":"2026-02-24T07:10:04.192Z","end":"2026-02-24T10:29:01.867Z","sizeMB":1.3,"userMsgs":12,"assistantMsgs":20,"records":568,"compacts":0,"compactPos":[],"turns":[266886,43830],"apiErrors":0,"topTools":[["Task",4],["AskUserQuestion",1],["EnterPlanMode",1],["Write",1],["ExitPlanMode",1]],"topEdits":[["luminous-frolicking-wozniak.md",1]]},{"id":"C:\\Users","slug":"luminous-frolicking-wozniak","branch":"feature/reporting-engine","start":"2026-02-24T10:29:01.865Z","end":"2026-02-25T20:14:36.020Z","sizeMB":32.2,"userMsgs":1646,"assistantMsgs":2667,"records":8486,"compacts":16,"compactPos":[0.04902191845392411,0.10853169926938487,0.16061748762667924,0.20928588263021447,0.26855998114541596,0.32665566815932123,0.41810040065991044,0.5024746641527221,0.6277398067405138,0.6668630685835494,0.7261371670987509,0.7567758661324534,0.8294838557624322,0.8766203158142823,0.9349516851284468,0.9740749469714824],"turns":[1212372,178313,1013094,48715,231693,492238,105747,51414,31802,46641,282930,483484,273395,49699,76608,80861,138308,292264,132201,55613,33953,73151,49048,32250,77346,47516,46219,58526,136303,48447,70274,175818,35968,35948,128637,135394,39607,151351,442931,441522,868092,359083,374443,235698,278972,164376,216781,133653,402010,349213,44342,676180,52948,62944,82524,51733,468976,39997,88869,297752,81530,215073,506429,81075,62759,868710,60999,116290,210234,757721,70688,45405,337711,166801,614023,264019,30476],"apiErrors":0,"topTools":[["Edit",469],["Read",443],["Bash",262],["Glob",96],["Grep",84]],"topEdits":[["mobile-form-filler.tsx",25],["manage-form-types-dialog.tsx",19],["offline-api.ts",19]]},{"id":"C:\\Users","slug":"spicy-knitting-bentley","branch":"feature/reporting-engine","start":"2026-02-25T13:38:01.548Z","end":"2026-02-26T13:56:11.231Z","sizeMB":18.7,"userMsgs":893,"assistantMsgs":1509,"records":4553,"compacts":9,"compactPos":[0.18669009444322424,0.2881616516582473,0.3448275862068966,0.45486492422578517,0.5967493960026357,0.6953656929497035,0.7799253239622227,0.8550406325499671,0.9442126070722601],"turns":[1120332,175819,244516,638049,214737,183962,64003,159197,47534,80785,394061,132289,339382,220764,326880,287288,126116,34693,78685,293227,754672,380912,112570,163712,432153,415040,45913,99753,33098,32718,131026,56750,165595,116545,207665,103533,192945,328092,140602,148358,38037,35917,486108,62884,435189,366589,615956,99740,203289,619531,210730,88917,63774,31711,248177],"apiErrors":1,"topTools":[["Edit",276],["Read",176],["Bash",151],["Grep",72],["Write",41]],"topEdits":[["applications-split-layout.tsx",113],["actions.ts",44],["page.tsx",25]]},{"id":"C:\\Users","slug":"spicy-knitting-bentley","branch":"feature/reporting-engine","start":"2026-02-26T13:56:11.229Z","end":"2026-02-26T23:49:14.980Z","sizeMB":19,"userMsgs":977,"assistantMsgs":1614,"records":4303,"compacts":10,"compactPos":[0.12572623750871484,0.20613525447362305,0.3090866837090402,0.42203114106437367,0.5061584940739019,0.6135254473623054,0.686033000232396,0.7780618173367418,0.8563792702765513,0.9240065070880781],"turns":[715159,96811,1171148,435369,139292,312209,90056,398072,37310,195111,146345,79330,1613339,364499,486301,45159,129393,38820,292150,43865,286184,116049,415721,95614,73357,99462,83788,444042,206815,376865,350153,45635,50472,563409,123978,185326,346151],"apiErrors":1,"topTools":[["Bash",263],["Edit",226],["Read",215],["Grep",45],["TaskUpdate",44]],"topEdits":[["packets-view.tsx",70],["applications-split-layout.tsx",32],["schedules-actions.ts",15]]},{"id":"C:\\Users","slug":"joyful-gliding-galaxy","branch":"feature/reporting-engine","start":"2026-02-26T17:43:16.293Z","end":"2026-02-26T23:39:47.108Z","sizeMB":11.7,"userMsgs":463,"assistantMsgs":819,"records":2180,"compacts":6,"compactPos":[0.12889908256880733,0.3155963302752294,0.5009174311926605,0.7041284403669725,0.8334862385321101,0.9389908256880733],"turns":[1006366,242648,468370,513843,339087,600912,77640,586121,522501,1552046],"apiErrors":0,"topTools":[["Read",151],["Edit",130],["Bash",45],["Grep",30],["Task",27]],"topEdits":[["safety-inspections-pack.ts",14],["template-helpers.ts",12],["packets-view.tsx",11]]},{"id":"C:\\Users","slug":"joyful-tickling-quill","branch":"feature/reporting-engine","start":"2026-02-27T13:27:12.262Z","end":"2026-02-27T13:43:37.418Z","sizeMB":0.4,"userMsgs":55,"assistantMsgs":74,"records":200,"compacts":0,"compactPos":[],"turns":[60013,55121,51080],"apiErrors":0,"topTools":[["Bash",36],["Read",2],["TaskList",1],["Edit",1]],"topEdits":[["claude-viz-extract.mjs",1]]}],"topTools":[["Edit",10928],["Read",9100],["Bash",7268],["Grep",2477],["Write",1691],["Glob",1445],["TaskUpdate",610],["Task",592],["TaskCreate",354],["TaskOutput",100],["mcp__makerkit__create_migration",68],["mcp__makerkit__add_user_story",49]],"topFiles":[["document-editor-page.tsx (_components)",262],["assets-table.tsx (_components)",171],["applications-split-layout.tsx (_components)",145],["api.ts (server)",129],["templates-tab.tsx (_components)",113],["10-task-list.md (audit)",111],["template-editor.tsx (_components)",105],["org-tree-detail-panel.tsx (_components)",101],["ai-chat-panel.tsx (components)",99],["assets-manager.tsx (_components)",96],["team-account-navigation.config.tsx (config)",92],["api.ts (server)",87]]};
+const SANKEY={"nodes":[{"id":"Week 1\nFeb 3–7","group":0,"label":"Week 1"},{"id":"Week 2\nFeb 8–12","group":0,"label":"Week 2"},{"id":"Week 3\nFeb 13–17","group":0,"label":"Week 3"},{"id":"Week 4\nFeb 18–22","group":0,"label":"Week 4"},{"id":"Week 5\nFeb 23–27","group":0,"label":"Week 5"},{"id":"Explore","group":1,"label":"Explore"},{"id":"Build","group":1,"label":"Build"},{"id":"Execute","group":1,"label":"Execute"},{"id":"Plan","group":1,"label":"Plan"},{"id":"Schema","group":1,"label":"Schema"},{"id":"Research","group":1,"label":"Research"},{"id":"App Pages","group":2,"label":"App Pages"},{"id":"Packages","group":2,"label":"Packages"},{"id":"Specs","group":2,"label":"Specs"},{"id":"DB / Schema","group":2,"label":"DB / Schema"},{"id":"i18n / Assets","group":2,"label":"i18n / Assets"},{"id":"Core Packages","group":2,"label":"Core Packages"}],"links":[{"source":0,"target":7,"value":2595},{"source":0,"target":6,"value":3754},{"source":0,"target":5,"value":2938},{"source":0,"target":8,"value":394},{"source":0,"target":9,"value":48},{"source":0,"target":10,"value":10},{"source":1,"target":5,"value":1859},{"source":1,"target":10,"value":11},{"source":1,"target":6,"value":2400},{"source":1,"target":7,"value":971},{"source":1,"target":8,"value":142},{"source":1,"target":9,"value":55},{"source":2,"target":5,"value":486},{"source":2,"target":7,"value":168},{"source":2,"target":6,"value":518},{"source":2,"target":9,"value":7},{"source":2,"target":8,"value":3},{"source":3,"target":7,"value":2280},{"source":3,"target":5,"value":4081},{"source":3,"target":6,"value":3106},{"source":3,"target":8,"value":603},{"source":3,"target":9,"value":111},{"source":3,"target":10,"value":38},{"source":4,"target":8,"value":614},{"source":4,"target":5,"value":3658},{"source":4,"target":10,"value":19},{"source":4,"target":7,"value":1254},{"source":4,"target":6,"value":2841},{"source":4,"target":9,"value":58},{"source":6,"target":13,"value":598},{"source":6,"target":14,"value":995},{"source":6,"target":12,"value":2886},{"source":6,"target":11,"value":7059},{"source":5,"target":12,"value":2700},{"source":5,"target":14,"value":1022},{"source":5,"target":13,"value":470},{"source":5,"target":16,"value":82},{"source":5,"target":11,"value":3760},{"source":6,"target":15,"value":183},{"source":5,"target":15,"value":122},{"source":6,"target":16,"value":15}]};
+const CDATA=[{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\8ea02743-f591-43c1-b292-44815faf4e9a","sizeMB":8.6,"compacts":5,"positions":[0.1574832464631422,0.38049143708116157,0.45606850335070737,0.7021593447505584,0.9158600148920327],"msgs":1770,"maxTurnMin":8.5,"avgTurnMin":2.57,"topTurns":[{"pos":0.9523809523809523,"min":8.5},{"pos":0.6666666666666666,"min":7.9},{"pos":0.2857142857142857,"min":6.5},{"pos":0.7619047619047619,"min":5.3},{"pos":0.21428571428571427,"min":5}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\fee368b3-a584-46b6-b946-d169a8839ce5","sizeMB":36.15,"compacts":21,"positions":[0.04242646385045359,0.09511591679648126,0.15366993493997985,0.19114817190506736,0.2606066159626134,0.32630807294052966,0.3740492990011912,0.4084119857051223,0.4471730963071566,0.4968386328232383,0.5405479703106387,0.5956199028681389,0.6424447906166957,0.6849628882983597,0.7350865939704939,0.7846604966553652,0.8143498579675617,0.8598918720791716,0.8938880234582608,0.9190873270411436,0.9630715660221754],"msgs":7397,"maxTurnMin":11.7,"avgTurnMin":2.35,"topTurns":[{"pos":0.3291139240506329,"min":11.7},{"pos":0.8481012658227848,"min":10.3},{"pos":0.6518987341772152,"min":9.8},{"pos":0.7658227848101266,"min":9.6},{"pos":0.4240506329113924,"min":8.6}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\1807d12a-a4d0-4851-9675-8f926b8c11f9","sizeMB":0.2,"compacts":0,"positions":[],"msgs":10,"maxTurnMin":1.1,"avgTurnMin":1.11,"topTurns":[{"pos":0,"min":1.1}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\07e6d1f6-126c-434c-a511-763dd6f0abaa","sizeMB":13.95,"compacts":9,"positions":[0.12480359147025814,0.22850729517396184,0.3288439955106622,0.4161616161616162,0.4769921436588103,0.6388327721661055,0.6978675645342312,0.8291806958473625,0.9887766554433222],"msgs":3054,"maxTurnMin":8.4,"avgTurnMin":1.92,"topTurns":[{"pos":0.9240506329113924,"min":8.4},{"pos":0.759493670886076,"min":7.3},{"pos":0.21518987341772153,"min":7},{"pos":0.12658227848101267,"min":5.8},{"pos":0.4936708860759494,"min":5.1}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\ca858525-ad15-4ca0-a7aa-e928c4aec60a","sizeMB":10.83,"compacts":6,"positions":[0.13786716062450383,0.2304842550939402,0.36279439005027786,0.5347975654935168,0.7097115639057952,0.8232336596983328],"msgs":2752,"maxTurnMin":12.9,"avgTurnMin":2.54,"topTurns":[{"pos":0.42857142857142855,"min":12.9},{"pos":0.9591836734693877,"min":10},{"pos":0.2857142857142857,"min":7.3},{"pos":0.9387755102040817,"min":7.1},{"pos":0.24489795918367346,"min":4.7}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\a3695db8-9f41-45a7-820e-4a347077a796","sizeMB":46.22,"compacts":24,"positions":[0.053818932468298435,0.09407254497198467,0.13071365378944264,0.1809938071365379,0.22316425833087586,0.2625331760542613,0.2920967266293129,0.3275582424063698,0.3636832792686523,0.40895016219404307,0.44699203774697727,0.4840017693895606,0.5248451784134474,0.5647301680920083,0.6125774107932763,0.6547478619876143,0.6860808021232675,0.7264081391919788,0.7601002654084341,0.8069890887643763,0.8403125921557063,0.8585225597168976,0.9012090828664111,0.958935417281038],"msgs":9200,"maxTurnMin":17.7,"avgTurnMin":2.27,"topTurns":[{"pos":0.9945652173913043,"min":17.7},{"pos":0.9836956521739131,"min":15.2},{"pos":0.10869565217391304,"min":11.4},{"pos":0.9782608695652174,"min":10.7},{"pos":0.2391304347826087,"min":9.2}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\f756e15b-1980-4693-b012-deff4d9bf2aa","sizeMB":8.28,"compacts":4,"positions":[0.17688330871491875,0.3652141802067947,0.6059822747415067,0.8131462333825702],"msgs":1723,"maxTurnMin":19.3,"avgTurnMin":2.47,"topTurns":[{"pos":0.5909090909090909,"min":19.3},{"pos":0.29545454545454547,"min":6.8},{"pos":0.8636363636363636,"min":5.5},{"pos":0.4772727272727273,"min":5.3},{"pos":0.9318181818181818,"min":4.4}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\eb5804a9-d1c4-41b1-b07a-cecd0eb1fc4e","sizeMB":1.25,"compacts":0,"positions":[],"msgs":44,"maxTurnMin":0,"avgTurnMin":0,"topTurns":[]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\1b4badea-7ad0-4fc7-a2d1-feb945ac6d8e","sizeMB":32.87,"compacts":17,"positions":[0.06355241716458447,0.13709940249864205,0.19435089625203694,0.2557305812058664,0.30048886474741987,0.36230309614340034,0.4329168929929386,0.49560021727322107,0.5490494296577947,0.6111895708853884,0.663335143943509,0.7057034220532319,0.7467680608365019,0.7918522542096686,0.8514937533948941,0.9204780010863661,0.9655621944595328],"msgs":6033,"maxTurnMin":18.6,"avgTurnMin":2.64,"topTurns":[{"pos":0.9098360655737705,"min":18.6},{"pos":0.11475409836065574,"min":16.9},{"pos":0.36885245901639346,"min":13.7},{"pos":0.3114754098360656,"min":11.2},{"pos":0.9918032786885246,"min":11.2}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\b0ecfa4d-a4cf-4514-80e9-8a467999968b","sizeMB":0.56,"compacts":0,"positions":[],"msgs":71,"maxTurnMin":4.3,"avgTurnMin":2.08,"topTurns":[{"pos":0.1,"min":4.3},{"pos":0.9,"min":4.1},{"pos":0.6,"min":2.8},{"pos":0.8,"min":2.4},{"pos":0.3,"min":1.5}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\0bc0fa59-e716-41e8-b989-3c6e03a4f6dd","sizeMB":0.65,"compacts":0,"positions":[],"msgs":107,"maxTurnMin":3.8,"avgTurnMin":2.37,"topTurns":[{"pos":0.75,"min":3.8},{"pos":0.25,"min":3.4},{"pos":0,"min":1.7},{"pos":0.5,"min":0.6}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\cad880e2-9ca0-4b36-b288-0799298860e6","sizeMB":3.39,"compacts":1,"positions":[0.8489968321013728],"msgs":493,"maxTurnMin":6.8,"avgTurnMin":2.42,"topTurns":[{"pos":0,"min":6.8},{"pos":0.75,"min":6},{"pos":0.4166666666666667,"min":4.3},{"pos":0.6666666666666666,"min":2.2},{"pos":0.5833333333333334,"min":1.9}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\9bc41275-876f-4c16-8fe9-4cb244d43f52","sizeMB":60.66,"compacts":5,"positions":[0.1431919381298336,0.27536911178814155,0.41481134286383875,0.5526130771033513,0.7408014998828216],"msgs":2394,"maxTurnMin":6.3,"avgTurnMin":2.08,"topTurns":[{"pos":0.711864406779661,"min":6.3},{"pos":0.7796610169491526,"min":5.8},{"pos":0.576271186440678,"min":5.2},{"pos":0.15254237288135594,"min":4.8},{"pos":0.6610169491525424,"min":4.8}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\e6f18861-6289-47dd-9133-14cf66f89bb5","sizeMB":3.45,"compacts":2,"positions":[0.4900181488203267,0.9392014519056261],"msgs":756,"maxTurnMin":3.5,"avgTurnMin":1.73,"topTurns":[{"pos":0.2727272727272727,"min":3.5},{"pos":0.09090909090909091,"min":3.4},{"pos":0.5,"min":3.4},{"pos":0.7727272727272727,"min":3.1},{"pos":0,"min":2.6}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\ae9d40de-b5ed-4bad-9e11-83ce6b943842","sizeMB":34.02,"compacts":15,"positions":[0.04117379435850774,0.10259326660600546,0.16856232939035487,0.20825750682438582,0.26888080072793447,0.3374658780709736,0.4177661510464058,0.4830527752502275,0.5578935395814377,0.6267060964513194,0.7060964513193813,0.794813466787989,0.8743175614194723,0.9481346678798908,0.9995450409463148],"msgs":5828,"maxTurnMin":6.3,"avgTurnMin":1.75,"topTurns":[{"pos":0.041666666666666664,"min":6.3},{"pos":0.7738095238095238,"min":6.1},{"pos":0.011904761904761904,"min":5.8},{"pos":0.05357142857142857,"min":5.8},{"pos":0.40476190476190477,"min":5.3}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\da54d577-e596-4ebb-a6ea-eb84a5a8d121","sizeMB":1.33,"compacts":0,"positions":[],"msgs":289,"maxTurnMin":4.3,"avgTurnMin":2.65,"topTurns":[{"pos":0.5,"min":4.3},{"pos":0.75,"min":3.7},{"pos":0,"min":1.4},{"pos":0.25,"min":1.2}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\b52cae33-d1bf-4dcf-96c2-f4866088334c","sizeMB":11.88,"compacts":5,"positions":[0.2796005706134094,0.44436519258202567,0.7157631954350927,0.8327389443651926,0.9803851640513552],"msgs":1778,"maxTurnMin":12,"avgTurnMin":1.77,"topTurns":[{"pos":0.7358490566037735,"min":12},{"pos":0.24528301886792453,"min":4.8},{"pos":0,"min":4.5},{"pos":0.2641509433962264,"min":3.9},{"pos":0.22641509433962265,"min":3.7}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\cc2859b8-e4c3-41ae-9369-67cabb4a3a3d","sizeMB":19.94,"compacts":10,"positions":[0.13633998265394623,0.24284475281873374,0.3113616652211622,0.38352124891587164,0.5045967042497832,0.6194275802254987,0.7398091934084996,0.8392020815264527,0.9210754553339116,0.9887250650477016],"msgs":3562,"maxTurnMin":10.3,"avgTurnMin":2.39,"topTurns":[{"pos":0.625,"min":10.3},{"pos":0.4090909090909091,"min":8.9},{"pos":0.9090909090909091,"min":8.7},{"pos":0.125,"min":8.5},{"pos":0.45454545454545453,"min":6.6}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\f47fe323-d1f1-4bc6-84d6-f0e52453f1a5","sizeMB":26.13,"compacts":12,"positions":[0.040373707040373706,0.11695028361695028,0.21888555221888556,0.28178178178178176,0.3875542208875542,0.48281614948281615,0.579245912579246,0.6628294961628295,0.7409075742409076,0.828661995328662,0.8913913913913913,0.9773106439773106],"msgs":3995,"maxTurnMin":7.4,"avgTurnMin":1.81,"topTurns":[{"pos":0.21359223300970873,"min":7.4},{"pos":0.0970873786407767,"min":7.2},{"pos":0.14563106796116504,"min":6.2},{"pos":0.44660194174757284,"min":6},{"pos":0.9029126213592233,"min":5.4}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\570f6ea8-841e-4f02-b1c0-ba53595153cf","sizeMB":1.61,"compacts":0,"positions":[],"msgs":130,"maxTurnMin":2,"avgTurnMin":1.43,"topTurns":[{"pos":0,"min":2},{"pos":0.6666666666666666,"min":1.4},{"pos":0.3333333333333333,"min":0.8}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\6e47d1f1-7e7d-45b0-a25a-cb0120765d60","sizeMB":24.38,"compacts":11,"positions":[0.09444063143445436,0.21564859299931366,0.315442690459849,0.39958819492107067,0.508716540837337,0.5902539464653397,0.6432395332875772,0.7376801647220316,0.8237474262182567,0.8955387783115992,0.9766643788606726],"msgs":4920,"maxTurnMin":8.8,"avgTurnMin":1.89,"topTurns":[{"pos":0.5446428571428571,"min":8.8},{"pos":0.38392857142857145,"min":7.7},{"pos":0.5,"min":7.6},{"pos":0.33035714285714285,"min":5.5},{"pos":0.6160714285714286,"min":5.5}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\1715a9a5-64a5-4d69-9762-08c2cc4e645b","sizeMB":12.93,"compacts":6,"positions":[0.10186298076923077,0.16766826923076922,0.3368389423076923,0.5354567307692307,0.7124399038461539,0.9266826923076923],"msgs":2326,"maxTurnMin":8.7,"avgTurnMin":2.06,"topTurns":[{"pos":0.43137254901960786,"min":8.7},{"pos":0.9803921568627451,"min":7.3},{"pos":0.803921568627451,"min":6.9},{"pos":0.29411764705882354,"min":6.4},{"pos":0.35294117647058826,"min":4.3}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\1150700c-3599-48ef-ba34-7ce9a5a7c3d4","sizeMB":12.38,"compacts":4,"positions":[0.16306549628629305,0.3261309925725861,0.5921674544226874,0.824442943956786],"msgs":1950,"maxTurnMin":6.1,"avgTurnMin":1.69,"topTurns":[{"pos":0.6923076923076923,"min":6.1},{"pos":0.23076923076923078,"min":4.4},{"pos":0.019230769230769232,"min":4.3},{"pos":0.17307692307692307,"min":4.3},{"pos":0.75,"min":4}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\e913fada-c8f6-401a-9018-3c657df07636","sizeMB":12.2,"compacts":5,"positions":[0.22922636103151864,0.3578080229226361,0.5848853868194842,0.9831661891117478,0.995702005730659],"msgs":1469,"maxTurnMin":43.6,"avgTurnMin":6.98,"topTurns":[{"pos":0.7857142857142857,"min":43.6},{"pos":0.9285714285714286,"min":10.9},{"pos":0.2857142857142857,"min":7.8},{"pos":0.7142857142857143,"min":7.5},{"pos":0.6428571428571429,"min":5.7}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\060ccecd-857b-43b1-8f4e-7645092191b3","sizeMB":13.37,"compacts":4,"positions":[0.13836921990822448,0.32439110483586303,0.48499823508648077,0.9647017296152488],"msgs":1296,"maxTurnMin":15.7,"avgTurnMin":6.55,"topTurns":[{"pos":0.5,"min":15.7},{"pos":0.75,"min":11},{"pos":0.875,"min":10.3},{"pos":0.375,"min":6.1},{"pos":0,"min":5}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\09d2c3e1-0576-4531-a0b4-e9f9d3e2a681","sizeMB":4.67,"compacts":1,"positions":[0.6629464285714286],"msgs":574,"maxTurnMin":20.2,"avgTurnMin":8.89,"topTurns":[{"pos":0.75,"min":20.2},{"pos":0.25,"min":5.8},{"pos":0.5,"min":5.5},{"pos":0,"min":4.1}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\f66b9c67-86b1-406b-85d0-8331b092b6bf","sizeMB":5.3,"compacts":3,"positions":[0.16576297443841984,0.4384198295894655,0.6560805577072037],"msgs":729,"maxTurnMin":13.1,"avgTurnMin":2.3,"topTurns":[{"pos":0.6774193548387096,"min":13.1},{"pos":0.7419354838709677,"min":8.2},{"pos":0.45161290322580644,"min":7.2},{"pos":0.6129032258064516,"min":6},{"pos":0.3870967741935484,"min":4.1}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\e0f11cc1-4972-403d-9027-cdc6efb70479","sizeMB":52.34,"compacts":24,"positions":[0.30763105507631056,0.31844724618447245,0.35938951559389515,0.40039814200398144,0.427936297279363,0.4559389515593895,0.48925016589250164,0.5307896483078964,0.5595222295952222,0.5727936297279363,0.5988055739880558,0.6382879893828799,0.6741207697412077,0.7078964830789648,0.7377571333775713,0.7753815527538155,0.8111479761114797,0.8364963503649635,0.8576642335766423,0.8911081619110817,0.9150630391506304,0.938420703384207,0.9633709356337093,0.9842070338420703],"msgs":6536,"maxTurnMin":21.4,"avgTurnMin":4.65,"topTurns":[{"pos":0.5494505494505495,"min":21.4},{"pos":0.0989010989010989,"min":18.6},{"pos":0.3626373626373626,"min":14.1},{"pos":0.16483516483516483,"min":14},{"pos":0.18681318681318682,"min":13.7}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\6dec3bdf-9062-4aee-b8a0-cd81768b93b4","sizeMB":25.91,"compacts":17,"positions":[0.10168528687748532,0.16833932967241053,0.21548949062677522,0.2963453891308464,0.3374360916493088,0.40200719560689263,0.45900397651959857,0.492899072145427,0.5462980496118159,0.6114372277977655,0.670138231395569,0.7129331565991289,0.7739064571103957,0.8197311115319068,0.8460518841128574,0.9123272107555387,0.9458435902291232],"msgs":3433,"maxTurnMin":48.5,"avgTurnMin":8.26,"topTurns":[{"pos":0.9210526315789473,"min":48.5},{"pos":0.2894736842105263,"min":47},{"pos":0.868421052631579,"min":36.7},{"pos":0.3157894736842105,"min":32.7},{"pos":0.9473684210526315,"min":23.9}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\63a10e91-f90d-447c-b5df-429a2fb5233a","sizeMB":7.57,"compacts":4,"positions":[0.10313447927199192,0.378159757330637,0.5667340748230536,0.7477249747219413],"msgs":1013,"maxTurnMin":15.6,"avgTurnMin":2.67,"topTurns":[{"pos":0.30303030303030304,"min":15.6},{"pos":0.24242424242424243,"min":8.7},{"pos":0.21212121212121213,"min":6.5},{"pos":0.3333333333333333,"min":5.2},{"pos":0.7878787878787878,"min":5}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\4203b515-521b-4398-8449-6581611c2080","sizeMB":22.14,"compacts":15,"positions":[0.058302321460216196,0.14052808789650895,0.19617224880382775,0.25943646996278574,0.30427077795498847,0.33067517278043596,0.4109516214779373,0.4713804713804714,0.5270246322877902,0.5665426191741981,0.6060606060606061,0.6608187134502924,0.734006734006734,0.8546872231082757,0.9284068757752968],"msgs":3566,"maxTurnMin":21.4,"avgTurnMin":4.62,"topTurns":[{"pos":0.3898305084745763,"min":21.4},{"pos":0.6440677966101694,"min":18.8},{"pos":0.4576271186440678,"min":17.4},{"pos":0.4915254237288136,"min":11.8},{"pos":0.4067796610169492,"min":11.3}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\81e460c3-d11c-4cbe-b6ad-bf335c031eff","sizeMB":18.72,"compacts":11,"positions":[0.376437289934548,0.4643552096232089,0.5292764903591014,0.6062267822395189,0.6387758712188218,0.6976826463824518,0.7266937909074828,0.7797629577215638,0.8330090217583584,0.9012913497258093,0.9844330444012029],"msgs":2584,"maxTurnMin":14,"avgTurnMin":3.52,"topTurns":[{"pos":0.6842105263157895,"min":14},{"pos":0.7543859649122807,"min":9.8},{"pos":0.10526315789473684,"min":9},{"pos":0.631578947368421,"min":8.7},{"pos":0.17543859649122806,"min":8.1}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\47f60321-4063-4376-94aa-b63becce5be4","sizeMB":33.44,"compacts":19,"positions":[0.053400637619553666,0.0924548352816153,0.12964930924548354,0.15608395324123273,0.18809776833156217,0.21865037194473963,0.2822794899043571,0.3238575982996812,0.41246014877789583,0.4772848034006376,0.554596174282678,0.660201912858661,0.700451647183847,0.7203772582359192,0.7546493092454836,0.8133634431455898,0.8412592986184909,0.8812433581296493,0.9321200850159405],"msgs":3948,"maxTurnMin":25,"avgTurnMin":3.99,"topTurns":[{"pos":0.5783132530120482,"min":25},{"pos":0.4457831325301205,"min":18.6},{"pos":0.5060240963855421,"min":17.8},{"pos":0.6144578313253012,"min":15.4},{"pos":0,"min":14.5}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\3cb666d8-235d-4f63-a2ce-f931f6ba4d96","sizeMB":1.21,"compacts":0,"positions":[],"msgs":204,"maxTurnMin":3.9,"avgTurnMin":2.55,"topTurns":[{"pos":0.25,"min":3.9},{"pos":0.75,"min":3},{"pos":0,"min":2.4},{"pos":0.5,"min":0.9}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\3bfe9dd4-95e6-4716-8f94-4cfb56d3df0f","sizeMB":40.49,"compacts":22,"positions":[0.046481371969248966,0.08503843879361325,0.15446481371969248,0.21324659964518036,0.2528681253696038,0.29544648137196927,0.3497338852749852,0.37776463630987583,0.40283855706682437,0.43027794204612657,0.49603784742755763,0.5529272619751626,0.6352454169130692,0.6807806031933767,0.7332939089296274,0.7622708456534595,0.7926670609107037,0.8332347723240686,0.8720283855706682,0.9023063276167947,0.9422826729745712,0.9856889414547605],"msgs":4457,"maxTurnMin":17.1,"avgTurnMin":3.64,"topTurns":[{"pos":0.1565217391304348,"min":17.1},{"pos":0.19130434782608696,"min":14.6},{"pos":0.05217391304347826,"min":13.5},{"pos":0.8869565217391304,"min":12.6},{"pos":0.3652173913043478,"min":12}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\e6bb0412-e4db-42d3-925f-ba909922f695","sizeMB":0.51,"compacts":0,"positions":[],"msgs":30,"maxTurnMin":2.9,"avgTurnMin":2.06,"topTurns":[{"pos":0,"min":2.9},{"pos":0.5,"min":1.2}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\c2cfd81f-90eb-48ba-a2b7-46b50f4a0708","sizeMB":3.66,"compacts":1,"positions":[0.5953565505804311],"msgs":325,"maxTurnMin":7.2,"avgTurnMin":2.63,"topTurns":[{"pos":0,"min":7.2},{"pos":0.6666666666666666,"min":3.7},{"pos":0.4444444444444444,"min":2.8},{"pos":0.3333333333333333,"min":2.5},{"pos":0.1111111111111111,"min":2.1}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\5217eb5b-69ec-4139-9ed6-d601c45974d9","sizeMB":123.39,"compacts":63,"positions":[0.016634676903390915,0.024397526124973343,0.04380464917892941,0.06483258690552357,0.0780123693751333,0.09383663894220516,0.11870334826188952,0.1216464064832587,0.12565579014715292,0.13606312646619748,0.15384943484751545,0.1749200255918106,0.19714224781403283,0.21215611004478566,0.22490936233738537,0.23988057155043718,0.2490936233738537,0.2656429942418426,0.2869268500746428,0.32339518020899977,0.3346982298997654,0.3443804649178929,0.36114310087438684,0.38421838345062914,0.39530816805288976,0.4252505864789934,0.43561526978033693,0.4533162721262529,0.46777564512689274,0.48278950735764553,0.4889741949242909,0.49916826615483045,0.5137129451908723,0.5413947536788227,0.562635956493922,0.5795692045212198,0.6127105992748987,0.6289613990189806,0.6410748560460653,0.6531030070377479,0.6702921731712519,0.6871827681808488,0.6949456174024312,0.709746214544679,0.7243335465984219,0.7383663894220516,0.745617402431222,0.7588824909362337,0.7741096182554916,0.800682448283216,0.8177436553636169,0.8262742589038174,0.8354020046918319,0.8532736191085519,0.8634676903390915,0.8810407336319045,0.8996374493495415,0.9138835572616762,0.929153337598635,0.9465984218383451,0.9643847302196631,0.9753892087865217,0.9966304116016208],"msgs":12423,"maxTurnMin":22.8,"avgTurnMin":3.61,"topTurns":[{"pos":0.6992481203007519,"min":22.8},{"pos":0.8571428571428571,"min":21.7},{"pos":0.09774436090225563,"min":18.9},{"pos":0.2781954887218045,"min":17.9},{"pos":0.34210526315789475,"min":17.5}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\62055388-2156-4ddb-ae50-51e6c51497cf","sizeMB":9.97,"compacts":4,"positions":[0.20967051775780915,0.4124946512623021,0.5331621737270005,0.6837826272999572],"msgs":1402,"maxTurnMin":38.2,"avgTurnMin":6.06,"topTurns":[{"pos":0.6666666666666666,"min":38.2},{"pos":0.4166666666666667,"min":12.1},{"pos":0.75,"min":6},{"pos":0.8333333333333334,"min":5.8},{"pos":0.08333333333333333,"min":3.4}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\e9bbf5a0-6f47-4b5d-917d-5ddd2815247d","sizeMB":1.32,"compacts":0,"positions":[],"msgs":32,"maxTurnMin":4.4,"avgTurnMin":2.59,"topTurns":[{"pos":0,"min":4.4},{"pos":0.5,"min":0.7}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\c6834a2c-a22e-4666-9d25-3c101a8f5f7c","sizeMB":32.25,"compacts":16,"positions":[0.04902191845392411,0.10853169926938487,0.16061748762667924,0.20928588263021447,0.26855998114541596,0.32665566815932123,0.41810040065991044,0.5024746641527221,0.6277398067405138,0.6668630685835494,0.7261371670987509,0.7567758661324534,0.8294838557624322,0.8766203158142823,0.9349516851284468,0.9740749469714824],"msgs":4313,"maxTurnMin":20.2,"avgTurnMin":3.74,"topTurns":[{"pos":0,"min":20.2},{"pos":0.025974025974025976,"min":16.9},{"pos":0.5194805194805194,"min":14.5},{"pos":0.8441558441558441,"min":14.5},{"pos":0.8961038961038961,"min":12.6}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\8c2bbd18-31d0-4252-b373-027dce6ed0f4","sizeMB":18.7,"compacts":9,"positions":[0.18669009444322424,0.2881616516582473,0.3448275862068966,0.45486492422578517,0.5967493960026357,0.6953656929497035,0.7799253239622227,0.8550406325499671,0.9442126070722601],"msgs":2402,"maxTurnMin":18.7,"avgTurnMin":3.89,"topTurns":[{"pos":0,"min":18.7},{"pos":0.36363636363636365,"min":12.6},{"pos":0.05454545454545454,"min":10.6},{"pos":0.8363636363636363,"min":10.3},{"pos":0.8909090909090909,"min":10.3}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\238b881b-7bdf-42e4-93c3-3e49728b03b4","sizeMB":19,"compacts":10,"positions":[0.12572623750871484,0.20613525447362305,0.3090866837090402,0.42203114106437367,0.5061584940739019,0.6135254473623054,0.686033000232396,0.7780618173367418,0.8563792702765513,0.9240065070880781],"msgs":2591,"maxTurnMin":26.9,"avgTurnMin":4.82,"topTurns":[{"pos":0.32432432432432434,"min":26.9},{"pos":0.05405405405405406,"min":19.5},{"pos":0,"min":11.9},{"pos":0.8918918918918919,"min":9.4},{"pos":0.3783783783783784,"min":8.1}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\0e2f145d-db47-4171-a15d-c0cd42134af6","sizeMB":11.71,"compacts":6,"positions":[0.12889908256880733,0.3155963302752294,0.5009174311926605,0.7041284403669725,0.8334862385321101,0.9389908256880733],"msgs":1282,"maxTurnMin":25.9,"avgTurnMin":9.85,"topTurns":[{"pos":0.9,"min":25.9},{"pos":0,"min":16.8},{"pos":0.5,"min":10},{"pos":0.7,"min":9.8},{"pos":0.8,"min":8.7}]},{"id":"C:\\Users\\jebus\\.claude\\projects\\C--Projects-athenaforms-master-plan\\3aeee0d6-c4e7-437f-b228-cefc201cd917","sizeMB":7.14,"compacts":2,"positions":[0.4316109422492401,0.8465045592705167],"msgs":919,"maxTurnMin":6.8,"avgTurnMin":2.15,"topTurns":[{"pos":0.8620689655172413,"min":6.8},{"pos":0.4482758620689655,"min":5.1},{"pos":0.6896551724137931,"min":4.9},{"pos":0.10344827586206896,"min":4.6},{"pos":0.41379310344827586,"min":4.3}]}];
+</script>
+<script>
+gsap.registerPlugin(ScrollTrigger);
+
+// nav scroll
+window.addEventListener('scroll',()=>{
+  document.getElementById('nav').classList.toggle('scrolled',window.scrollY>40);
+});
+
+// count-up
+const sess=DATA.sessions;
+function cu(id,val,dec,pre){
+  const el=document.getElementById(id),o={v:0};
+  gsap.to(o,{v:val,duration:2.4,delay:.6,ease:'power2.out',
+    onUpdate(){el.textContent=(pre||'')+(dec?o.v.toFixed(dec):Math.round(o.v).toLocaleString());}});
+}
+cu('s1',sess.length);
+cu('s2',sess.reduce((s,x)=>s+x.userMsgs+x.assistantMsgs,0));
+cu('s3',sess.reduce((s,x)=>s+x.compacts,0));
+cu('s4',sess.reduce((s,x)=>s+x.sizeMB,0)/1024,2);
+cu('s5',588119);
+
+// hero entrance
+gsap.from('.hero-eyebrow',{opacity:0,y:12,duration:.6,delay:.2});
+gsap.from('.hero-title',  {opacity:0,y:20,duration:.7,delay:.3});
+gsap.from('.hero-sub',    {opacity:0,y:16,duration:.6,delay:.4});
+gsap.from('.stats-row',   {opacity:0,y:20,duration:.6,delay:.5});
+
+// ── Staggered card group entrances ──────────────────────────────────────
+[
+  {sel:'.layer-grid',   dur:.65, stagger:.11, ease:'back.out(1.6)', y:50, scale:.94},
+  {sel:'.concept-grid', dur:.60, stagger:.12, ease:'back.out(1.5)', y:44, scale:.95},
+  {sel:'.day-grid',     dur:.55, stagger:.08, ease:'power3.out',    y:36, scale:.97},
+].forEach(({sel,dur,stagger,ease,y,scale})=>{
+  const grid=document.querySelector(sel);
+  if(!grid)return;
+  gsap.fromTo(grid.querySelectorAll('.reveal'),
+    {opacity:0,y,scale},
+    {opacity:1,y:0,scale:1,duration:dur,stagger,ease,
+     scrollTrigger:{trigger:grid,start:'top 85%',once:true}});
+});
+
+// Founder cards — staggered entrance + hover lift
+gsap.fromTo('.founder-card',
+  {opacity:0,y:50,scale:.95},
+  {opacity:1,y:0,scale:1,duration:.7,stagger:.15,ease:'back.out(1.5)',
+   scrollTrigger:{trigger:'.founders-grid',start:'top 85%',once:true}});
+
+document.querySelectorAll('.founder-card').forEach(card=>{
+  card.addEventListener('mouseenter',()=>gsap.to(card,{y:-6,scale:1.02,duration:.3,ease:'power2.out'}));
+  card.addEventListener('mouseleave',()=>gsap.to(card,{y:0, scale:1,   duration:.35,ease:'power2.inOut'}));
+});
+
+// Anything else with .reveal — simple scroll fade
+document.querySelectorAll('.reveal').forEach(el=>{
+  if(el.closest('.layer-grid,.concept-grid,.day-grid'))return;
+  gsap.to(el,{opacity:1,y:0,duration:.7,ease:'power2.out',
+    scrollTrigger:{trigger:el,start:'top 88%',once:true}});
+});
+
+// ── Section header cascades ──────────────────────────────────────────────
+// Each section: eyebrow floats up first, then title, then desc
+['.data-section', '.context-hero'].forEach(sel=>{
+  const sec=document.querySelector(sel);
+  if(!sec)return;
+  const els=['.section-eyebrow','.section-title','.section-desc']
+    .map(s=>sec.querySelector(s)).filter(Boolean);
+  gsap.from(els,{opacity:0,y:24,duration:.65,stagger:.1,ease:'power3.out',
+    scrollTrigger:{trigger:sec,start:'top 78%',once:true}});
+});
+// "Your Average Day" sub-header
+const dayHdr=document.getElementById('day-header');
+if(dayHdr){
+  gsap.from(dayHdr.children,{opacity:0,y:20,duration:.55,stagger:.1,ease:'power3.out',
+    scrollTrigger:{trigger:dayHdr,start:'top 85%',once:true}});
+}
+
+
+// ── War & Peace pill — fade up after stats ───────────────────────────────
+gsap.from('#wp-pill',{opacity:0,y:12,duration:.6,delay:.9,ease:'power2.out'});
+
+// ── Pulse player card — slide up ────────────────────────────────────────
+gsap.from('.pulse-player',{opacity:0,y:40,duration:.7,ease:'power3.out',
+  scrollTrigger:{trigger:'.pulse-player',start:'top 88%',once:true}});
+
+// ── Sankey legend — fade in as one row ───────────────────────────────────
+gsap.from('.sk-legend',{opacity:0,y:12,duration:.5,ease:'power2.out',
+  scrollTrigger:{trigger:'.sk-legend',start:'top 92%',once:true}});
+
+// ── CTA section — title → sub → chips → launch → button cascade ──────────
+const ctaST={trigger:'.cta-section',start:'top 80%',once:true};
+gsap.from('.cta-title',  {opacity:0,y:48,duration:.75,ease:'power3.out',scrollTrigger:ctaST});
+gsap.from('.cta-sub',    {opacity:0,y:32,duration:.65,delay:.15,ease:'power2.out',scrollTrigger:ctaST});
+gsap.from('.cta-chip',   {opacity:0,y:14,scale:.92,duration:.4,stagger:.04,delay:.3,ease:'back.out(1.4)',scrollTrigger:ctaST});
+gsap.from('.cta-launch', {opacity:0,y:14,duration:.5,delay:.65,ease:'power2.out',scrollTrigger:ctaST});
+gsap.from('.cta-btn',    {opacity:0,y:20,scale:.94,duration:.55,delay:.8,ease:'back.out(1.7)',scrollTrigger:ctaST});
+
+// tip helpers
+function tip(e,label,val){
+  const t=document.getElementById('tip');
+  t.innerHTML='<div class="tn">'+label+'</div><div class="tr"><span>Volume</span><span>'+val.toLocaleString()+'</span></div>';
+  t.style.opacity='1';t.style.left=(e.clientX+14)+'px';t.style.top=(e.clientY-14)+'px';
+}
+function ht(){document.getElementById('tip').style.opacity='0';}
+
+// sankey
+function draw(){
+  const wrap=document.getElementById('sk-wrap');
+  const W=wrap.clientWidth,H=Math.max(400,window.innerHeight*.5);
+  const svg=d3.select('#sk').attr('viewBox','0 0 '+W+' '+H).attr('height',H);
+  const sk=d3.sankey().nodeWidth(18).nodePadding(18).nodeSort(null).extent([[1,28],[W-160,H-6]]);
+  const g=sk({nodes:SANKEY.nodes.map(d=>({...d})),links:SANKEY.links.map(d=>({...d}))});
+  const pal=[
+    ['#34d399','#10b981','#059669','#6ee7b7','#047857'],
+    ['#06b6d4','#10b981','#f59e0b','#8b5cf6','#ec4899','#64748b'],
+    ['#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#a855f7']
+  ];
+  const col=n=>pal[n.group][n.index%pal[n.group].length];
+
+  const lG=svg.append('g');
+  lG.selectAll('path').data(g.links).join('path')
+    .attr('fill','none').attr('d',d3.sankeyLinkHorizontal())
+    .attr('stroke-width',d=>Math.max(1,d.width))
+    .attr('stroke',d=>col(g.nodes[d.source.index]))
+    .attr('stroke-opacity',0)
+    .on('mouseenter',function(e,d){d3.select(this).attr('stroke-opacity',.55);tip(e,g.nodes[d.source.index].label+' → '+g.nodes[d.target.index].label,d.value);})
+    .on('mouseleave',function(){d3.select(this).attr('stroke-opacity',.18);ht();});
+
+  gsap.to(lG.node().querySelectorAll('path'),{attr:{'stroke-opacity':.18},duration:1.8,stagger:.02,ease:'power2.out',delay:.2,
+    scrollTrigger:{trigger:'#sk-wrap',start:'top 80%',once:true}});
+
+  const nG=svg.append('g');
+  const ns=nG.selectAll('g').data(g.nodes).join('g')
+    .attr('transform',d=>'translate('+d.x0+','+d.y0+')').attr('opacity',0);
+
+  ns.append('rect').attr('height',d=>Math.max(2,d.y1-d.y0)).attr('width',d=>d.x1-d.x0)
+    .attr('fill',col).attr('rx',3).attr('opacity',.9);
+
+  ns.append('text')
+    .attr('fill','#94a3b8').attr('font-size','11px')
+    .attr('font-family','SF Mono,Cascadia Code,monospace')
+    .attr('x',d=>d.x0<W/2?(d.x1-d.x0)+10:-10)
+    .attr('text-anchor',d=>d.x0<W/2?'start':'end')
+    .attr('y',d=>(d.y1-d.y0)/2).attr('dy','.35em')
+    .text(d=>d.label);
+
+  ns.on('mouseenter',(e,d)=>tip(e,d.label,d.value)).on('mouseleave',ht);
+
+  gsap.to(nG.node().querySelectorAll('g'),{opacity:1,duration:.7,stagger:.05,ease:'power2.out',delay:.1,
+    scrollTrigger:{trigger:'#sk-wrap',start:'top 80%',once:true}});
+
+  ['WEEKS','TOOL TYPE','CODEBASE AREA'].forEach((h,i)=>{
+    const n=g.nodes.find(n=>n.group===i);if(!n)return;
+    svg.append('text').attr('font-size','10px').attr('font-family','SF Mono,monospace')
+      .attr('fill','#10b981').attr('letter-spacing','.15em')
+      .attr('x',n.x0).attr('y',16).text(h);
+  });
+}
+
+ScrollTrigger.create({trigger:'#sk-wrap',start:'top 85%',once:true,onEnter:draw});
+window.addEventListener('resize',()=>{d3.select('#sk').selectAll('*').remove();draw();});
+
+// ── Context Pulse ──────────────────────────────────────────────────────
+(function(){
+
+  function barColor(c) {
+    return c>30?'#ef4444':c>15?'#f59e0b':c>5?'#06b6d4':'#10b981';
+  }
+
+  // ── Animated player ──────────────────────────────────────────────────
+  function initPlayer() {
+    const wrap = document.getElementById('pulse-wrap');
+    const svg  = document.getElementById('pulse-svg');
+    const ML=68, MR=24, MT=48, MB=44;
+    const PH = 400;
+
+    function build() {
+      const W = wrap.clientWidth;
+      const H = PH + MT + MB;
+      svg.setAttribute('viewBox','0 0 '+W+' '+H);
+      svg.setAttribute('height', H);
+      const PW = W - ML - MR;
+      const sw = PW / CDATA.length;
+      const sess = CDATA.map((s,i)=> Object.assign({},s,{sx0:ML+i*sw, sw}));
+      const maxCompacts = Math.max(...sess.map(s=>s.compacts));
+      const yBase=(MT+PH).toFixed(1);
+      const yTop = MT;
+
+      let h = '<defs>'
+        +'<clipPath id="rc2"><rect id="rr2" x="'+ML+'" y="0" width="0" height="'+H+'"/></clipPath>'
+        +'</defs>';
+
+      // Y-axis labels — 100% stacked, so describe density not count
+      h+='<text x="'+(ML-10)+'" y="'+(yTop+4)+'" fill="#64748b" font-size="11" text-anchor="end" font-family="SF Mono,monospace">dense</text>';
+      h+='<text x="'+(ML-10)+'" y="'+yBase+'" fill="#64748b" font-size="11" text-anchor="end" font-family="SF Mono,monospace">light</text>';
+      h+='<text x="16" y="'+(MT+PH/2)+'" fill="#94a3b8" font-size="12" text-anchor="middle" font-family="SF Mono,monospace" transform="rotate(-90,16,'+(MT+PH/2)+')">Reset Density</text>';
+
+      // Baseline
+      h+='<line x1="'+ML+'" y1="'+yBase+'" x2="'+(W-MR)+'" y2="'+yBase+'" stroke="#334155" stroke-width="1"/>';
+
+      // Session separators + labels every 5th
+      sess.forEach((s,i)=>{
+        h+='<line x1="'+s.sx0.toFixed(1)+'" y1="'+MT+'" x2="'+s.sx0.toFixed(1)+'" y2="'+yBase+'" stroke="#1e2235" stroke-width="0.5"/>';
+        if(i%5===0){
+          h+='<text x="'+(s.sx0+s.sw/2).toFixed(1)+'" y="'+(H-12)+'" fill="#64748b" font-size="11" text-anchor="middle" font-family="SF Mono,monospace">S'+(i+1)+'</text>';
+        }
+      });
+
+      // 100% height stacked bars — every session fills full chart height
+      // Thin segments = many resets (dense); fat segments = few resets (calm)
+      const gap = Math.max(1, sw * 0.12);
+      const SEG_GAP = 1;
+      const FULL_H = PH * 0.95;
+      h += '<g clip-path="url(#rc2)">';
+      sess.forEach(s=>{
+        const bx = (s.sx0 + gap/2).toFixed(1);
+        const bw = Math.max(1, s.sw - gap);
+        if(s.compacts === 0) {
+          // Zero resets — thin gray baseline tick
+          h += '<rect x="'+bx+'" y="'+(parseFloat(yBase)-4).toFixed(1)+'" width="'+bw.toFixed(1)+'" height="4" rx="1" fill="#334155" opacity="0.5"/>';
+          return;
+        }
+        const col = barColor(s.compacts);
+        const totalGaps = SEG_GAP * (s.compacts - 1);
+        const segH = (FULL_H - totalGaps) / s.compacts;
+        for(let j = 0; j < s.compacts; j++) {
+          const segY = (parseFloat(yBase) - FULL_H) + j * (segH + SEG_GAP);
+          const op = j % 2 === 0 ? '0.85' : '0.55';
+          h += '<rect x="'+bx+'" y="'+segY.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+segH.toFixed(1)+'" fill="'+col+'" opacity="'+op+'"/>';
+        }
+      });
+      h += '</g>';
+
+      // S38 annotation — security audit day, 63 resets
+      const s38=sess[37];
+      if(s38){
+        const ax=(s38.sx0+s38.sw/2).toFixed(1);
+        const annW=208;
+        h+='<line x1="'+ax+'" y1="'+MT+'" x2="'+ax+'" y2="'+yBase+'" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.7"/>';
+        h+='<rect x="'+(parseFloat(ax)-annW/2)+'" y="'+(MT-30)+'" width="'+annW+'" height="22" rx="4" fill="#1a0505" stroke="#ef4444" stroke-width="1" opacity="0.9"/>';
+        h+='<text x="'+ax+'" y="'+(MT-14)+'" fill="#ef4444" font-size="11" font-weight="700" text-anchor="middle" font-family="SF Mono,monospace">Security Audit Day — 63 resets</text>';
+      }
+
+      // Playhead
+      h+='<line id="ph2" x1="'+ML+'" y1="'+MT+'" x2="'+ML+'" y2="'+yBase+'" stroke="rgba(255,255,255,0.8)" stroke-width="2"/>';
+
+      svg.innerHTML = h;
+
+      // Fill bar: progress through current reset cycle (fills up → drops at each reset)
+      function getFill(nx) {
+        const px = ML + nx * PW;
+        const s = sess.find(s=>px>=s.sx0 && px<s.sx0+s.sw) || sess[sess.length-1];
+        const sp = Math.max(0, Math.min(1, (px - s.sx0) / s.sw));
+        if(!s.positions || s.positions.length === 0) return sp;
+        const bounds = [0, ...s.positions, 1.0];
+        for(let i = 0; i < bounds.length - 1; i++) {
+          if(sp >= bounds[i] && sp < bounds[i+1]) {
+            return (sp - bounds[i]) / (bounds[i+1] - bounds[i]);
+          }
+        }
+        return 0;
+      }
+
+      // Animation state
+      let normX=0, playing=true, speedIdx=0;
+      const speeds=[0.25,0.5,1,2,5];
+      const BASE=0.00045;
+
+      function getIdx(nx){
+        const px=ML+nx*PW;
+        const i=sess.findIndex(s=>px>=s.sx0&&px<s.sx0+s.sw);
+        return i<0?sess.length-1:i;
+      }
+
+      function updateUI(nx){
+        const i=getIdx(nx), s=sess[i];
+        const c=barColor(s.compacts);
+        document.getElementById('pl-num').innerHTML='Session <strong>'+(i+1)+'</strong> / 45';
+        document.getElementById('pl-resets').innerHTML='<span style="color:'+c+'">'+s.compacts+'</span>';
+        document.getElementById('pl-size').textContent=s.sizeMB.toFixed(0)+' MB';
+        document.getElementById('pl-msgs').textContent=s.msgs.toLocaleString();
+      }
+
+      (function frame(){
+        if(playing){normX+=BASE*speeds[speedIdx]; if(normX>1)normX=0;}
+        const px=ML+normX*PW;
+        const rr=document.getElementById('rr2'),ph=document.getElementById('ph2');
+        if(rr)rr.setAttribute('width',(px-ML).toString());
+        if(ph){ph.setAttribute('x1',px.toFixed(1));ph.setAttribute('x2',px.toFixed(1));}
+        updateUI(normX);
+        requestAnimationFrame(frame);
+      })();
+
+      document.getElementById('pl-btn').onclick=()=>{
+        playing=!playing;
+        document.getElementById('pl-btn').textContent=playing?'⏸':'▶';
+      };
+      document.getElementById('pl-speed').onclick=()=>{
+        speedIdx=(speedIdx+1)%speeds.length;
+        document.getElementById('pl-speed').textContent=speeds[speedIdx]+'×';
+      };
+      svg.addEventListener('click',e=>{
+        const r=svg.getBoundingClientRect();
+        normX=Math.max(0,Math.min(1,(e.clientX-r.left-ML)/PW));
+      });
+    }
+
+    build();
+    window.addEventListener('resize',()=>{svg.innerHTML='';build();});
+  }
+
+  ScrollTrigger.create({trigger:'#pulse-wrap',start:'top 85%',once:true,onEnter:initPlayer});
+})();
+</script>
+</body>
+</html>
